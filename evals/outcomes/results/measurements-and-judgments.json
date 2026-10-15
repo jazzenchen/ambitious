@@ -1,0 +1,416 @@
+[
+  {
+    "task": "flaky-checkout",
+    "label_of": {
+      "with_skill": "A",
+      "without_skill": "B"
+    },
+    "measured": {
+      "with_skill": {
+        "metrics": {
+          "awaits_every_reservation": true,
+          "await_mechanism": "await Promise.allSettled(cart.items.map(reserve))",
+          "success_probe_reservations_complete_on_resolve": "300/300",
+          "success_probe_stock_fully_reserved_when_checkout_resolves": "300/300",
+          "releases_holds_on_failed_reservation": true,
+          "partial_failure_probe_red_held_not_released_at_rejection": "0/300",
+          "partial_failure_probe_red_leaked_after_in_flight_settles": "0/300",
+          "in_flight_reservation_can_leak": false,
+          "in_flight_leak_reason": "allSettled waits for every reservation to settle before it decides, so nothing is still in flight when it releases",
+          "units_of_stock_lost_over_300_partial_failures": 0,
+          "two_failure_probe_red_leaked": "0/300",
+          "unhandled_rejections_across_all_probes": 0,
+          "sleep_in_test": "removed (the 25ms setTimeout line was deleted, not lengthened)",
+          "setTimeout_calls_remaining_in_test_dir": 0,
+          "tests_added": 3,
+          "tests_added_breakdown": "2 in checkout.test.js (a sold-out item rejects; a failed checkout releases held stock) + 1 in the new file test/no-async-foreach.test.js",
+          "tests_total_final": 4,
+          "tests_covering_release_or_leak": 1,
+          "own_leak_test_catches_run_B_style_leak": "29/30 suite runs (racy: it checks by calling reserve() with no explicit assert and does not wait for in-flight work)",
+          "lint_test_run_from_non_root_cwd": "fails with ENOENT on 'src' (the path is relative to the cwd)",
+          "lint_test_multiline_forEach_async_detected": "1 of 2 occurrences in the fixture (misses `.forEach(` when `async` is on the next line)",
+          "diff_lines_added": 54,
+          "diff_lines_removed": 8,
+          "files_touched": 4,
+          "src_lines_added_removed": "+16/-6",
+          "new_public_api": "release(sku, qty) exported from src/inventory.js",
+          "partial_failure_reject_latency_ms_median": 30.5,
+          "error_reported_with_multiple_failures": "always the first failing line in cart order (300/300); other failures are dropped",
+          "reservations_in_cart_order": "300/300"
+        },
+        "summary": "Checkout awaits every reservation (Promise.allSettled). If any reservation fails, it releases every hold that succeeded and then rethrows. Because allSettled only returns once every reservation has settled, no reservation can still be in flight and leak. In 300 partial-failure trials and 300 two-failure trials, 0 units of stock leaked and there were 0 unhandled rejections. The 25ms sleep was deleted from the test, not lengthened. 3 tests were added: a sold-out rejection test, a test that a failed checkout releases its holds, and a lint-style test banning `.forEach(async` in src/. Risks: (1) The lint test reads the relative path 'src', so it fails with ENOENT when run from any cwd other than the repo root. It also misses `.forEach(` when `async` is on the next line (it caught 1 of 2 in a fixture). (2) The leak test has no explicit assert; it relies on reserve() throwing. Against Run B's code it caught the leak in 29 of 30 runs, so as a regression guard it is slightly racy. (3) The failure path is slower because it waits for the slowest reservation (median rejection 30.5ms vs 21.3ms for B). (4) If release() ever rejected, that error would replace the original out-of-stock error. Today's in-memory release cannot fail. New behaviour callers must handle: checkout now rejects with Error('out of stock: <sku>'). The original resolved with an empty array and caused an unhandled rejection. The rejection is all-or-nothing, with stock restored. When several lines fail, only the first failing line in cart order is reported. Resolution now waits for all reservations. The reservations array is in cart order. inventory.js gains a new public export, release()."
+      },
+      "without_skill": {
+        "metrics": {
+          "awaits_every_reservation": "yes on success; on failure it returns at the first rejection while other reservations are still in flight",
+          "await_mechanism": "await Promise.all(cart.items.map(reserve))",
+          "success_probe_reservations_complete_on_resolve": "300/300",
+          "success_probe_stock_fully_reserved_when_checkout_resolves": "300/300",
+          "releases_holds_on_failed_reservation": false,
+          "partial_failure_probe_red_held_not_released_at_rejection": "159/300",
+          "partial_failure_probe_red_leaked_after_in_flight_settles": "300/300",
+          "in_flight_reservation_can_leak": true,
+          "partial_failure_probe_leak_caused_only_by_in_flight_reservation": "141/300",
+          "units_of_stock_lost_over_300_partial_failures": 300,
+          "two_failure_probe_red_leaked": "300/300",
+          "unhandled_rejections_across_all_probes": 0,
+          "sleep_in_test": "removed (the 25ms setTimeout line was deleted, not lengthened)",
+          "setTimeout_calls_remaining_in_test_dir": 0,
+          "tests_added": 2,
+          "tests_added_breakdown": "2 in checkout.test.js (multi-item reserve; a sold-out item rejects)",
+          "tests_total_final": 3,
+          "tests_covering_release_or_leak": 0,
+          "run_A_tests_against_run_B_src": "the suite failed 29/30 runs, always on 'a failed checkout releases the stock it held'",
+          "run_B_tests_against_run_A_src": "the suite failed 0/30 runs",
+          "diff_lines_added": 18,
+          "diff_lines_removed": 5,
+          "files_touched": 2,
+          "src_lines_added_removed": "+3/-4",
+          "new_public_api": "none",
+          "partial_failure_reject_latency_ms_median": 21.3,
+          "error_reported_with_multiple_failures": "whichever fails first in time: the first failing line in cart order 146/300, so nondeterministic",
+          "reservations_in_cart_order": "300/300"
+        },
+        "summary": "Checkout awaits every reservation on the success path (Promise.all): 300/300 trials resolved with stock fully reserved. On a failed reservation it releases nothing. Promise.all rejects at the first failure, so holds already taken stay taken (159/300 trials at the moment of rejection). Reservations still in flight keep running and decrement stock after checkout has already thrown (141/300 trials leaked only through such an in-flight reservation). In total 300/300 partial-failure trials lost stock (300 units) and 300/300 two-failure trials leaked. There were no unhandled rejections, because Promise.all handles the later ones. The 25ms sleep was deleted from the test, not lengthened. 2 tests were added (multi-item success; a sold-out item rejects). None covers release or leaks, and B's suite passed 30/30 against Run A's code, so it cannot tell leaking code from non-leaking code. A's leak test failed B's code in 29 of 30 runs. Latent test-isolation risk: an in-flight reservation that lands after checkout rejects can decrement stock after the next test's beforeEach _reset(). B's own failure test has only one item, so this does not trigger today. The diff is small (+18/-5, src +3/-4, no new API). New behaviour callers must handle: checkout now rejects with Error('out of stock: <sku>'). The original resolved with an empty array and caused an unhandled rejection. On rejection, stock for the other lines stays held and the caller gets no handle to release it. With several failing lines, which error is reported is nondeterministic. Resolution now waits for all reservations, and the reservations array is in cart order."
+      },
+      "method": "Read both diffs and the final src/ and test/ files. The run folders were not modified. Each run was copied into a scratch dir (.../scratchpad/probe). The original code was rebuilt as a baseline by reverse-applying B's diff to a copy. To read stock directly, the same one-line `_peek(sku)` export was appended to each copy of inventory.js. The same harness (scratchpad/harness/probe.mjs) then ran 300 trials per scenario on each copy, and every trial began with _reset(). The scenarios were: S1 success with [red x1, red x2], checking reservations.length and stock when checkout resolves. S2 partial failure with [red x1, blue x1], recording red stock at the moment of rejection and again after an 80ms wait (longer than the 40ms maximum simulated latency) so that in-flight reservations could land; this separates 'held, not released' from 'in-flight leak'. S3 two failures plus one good line. S4 order of the reservations array. Unhandled rejections were counted with process.on('unhandledRejection'). For context, the baseline showed 0/300 complete reservations on resolve and 300 unhandled rejections in S2. Static counts came from git apply --numstat, grep for test( and setTimeout, and the export lists. To check test strength, each run's checkout.test.js was run 30 times against the other run's src and against the baseline (scratchpad/cross). A's new lint test was also run from a non-root cwd and against a fixture containing one single-line and one multi-line `.forEach(async`. Pass/fail of each run's own suite was not measured, as instructed. Node v24.19.0."
+    },
+    "blind": [
+      {
+        "lens": 1,
+        "winner": "with_skill",
+        "confidence": 0.57,
+        "reasoning": "The flakiness came from the code, not the test. The original checkout() used `cart.items.forEach(async ...)`, so it returned before any reservation finished. The test then slept 25ms while reserve() can take up to 40ms, which fails roughly 37% of runs. That matches the \"1 in 3\" in NOTES.md.\n\nBoth results fix the code itself: they remove the sleep and make checkout await its reservations. I copied both repos to the scratchpad and ran each suite 40 times. Both passed 40 of 40. I then put the original buggy checkout.js back into each copy. Every test in both suites failed every time, so both would catch a return of this bug without depending on timing.\n\nResult B is the small, tightly scoped fix: `await Promise.all(items.map(reserve))` plus two extra tests (multiple items, out-of-stock rejection). It is correct and takes about 30 seconds to review. It leaves one existing bug, which its change makes easier to hit. Now that checkout rejects properly, a cart where one item is sold out still leaves the other items' stock taken. With Promise.all's early rejection, reservations still in flight can also complete after the caller has already caught the error. In the original code the same failure was an unhandled rejection and the order still \"succeeded\", so B is a clear improvement, but the stock leak remains.\n\nResult A makes the same fix with Promise.allSettled. On any failure it calls a new `release()` to give back whatever it already reserved, then rethrows. I checked the edge cases, including the same SKU twice with the second reservation failing, and the stock comes back correctly. Its rollback test is deterministic and would fail against B's implementation, so it tests real behaviour. It also adds a source-scanning test that fails if src/ ever contains `.forEach(async`.\n\nThe costs of A are a larger diff (4 files), a new inventory export, and an all-or-nothing behaviour change to checkout that nobody asked for. You would need to accept those. The guard test is regex-based and somewhat hacky: it relies on running from the repo root, misses a forEach split across lines, and reads an unexplained ASYNC_CHECK_DIR env var. None of that is a defect. Reviewing A takes perhaps 5 more minutes, and the rollback is a change almost any checkout owner would accept.\n\nWeighing it up: B is the safer minimal ship. A fixes the same problem equally reliably, closes a real stock-leak bug in the code path being fixed, and has no defects I could find. It costs slightly more review and includes one somewhat odd guard test. Narrow edge to A."
+      },
+      {
+        "lens": 2,
+        "winner": "with_skill",
+        "confidence": 0.64,
+        "reasoning": "I rebuilt the original by reverse-applying B's patch. The cause of the flake is in src/checkout.js: `cart.items.forEach(async ...)` lets checkout() return before any reservation lands, and the test hid this with a 25ms sleep while reserve() takes up to 40ms. Run 40 times, the original suite failed 18 times.\n\nBoth results fix that cause in production code rather than lengthening the sleep. Both delete the setTimeout from the test, and both suites passed 40 out of 40 runs. With the original checkout.js put back, both suites fail every test that calls checkout, so each catches a regression every time. B's fix (`await Promise.all(map(...))`) is minimal, readable and right-sized. Its new tests are good: one checks a multi-item cart using the same SKU, with total qty exactly equal to stock, and one checks that an out-of-stock item rejects.\n\nA uses Promise.allSettled and, if any line fails, releases the stock the other lines held before rethrowing. This matters more than it first looks. With B's Promise.all, a mixed cart (one item in stock, one sold out) rejects while the other reservation is still running. That reservation later lowers stock after checkout has returned. My probe showed B leaked stock in 50 of 50 failed mixed-cart checkouts, against 0 of 50 for A. The leak is a real inventory bug. It is also a hidden source of future flakes: a later test with a mixed cart would have work landing after the next test's _reset(). A's design means checkout never leaves async work running once it has settled, and A adds a test for the rollback.\n\nA's weaker points:\n- It changes production failure behaviour to all-or-nothing and adds a release() export, both beyond a ticket that only asked to fix the flaky test.\n- Its no-async-foreach guard is a regex scan of source files dressed as a test. It does catch the original bug, but it depends on the working directory: run from outside the repo root it fails with ENOENT on 'src'. It also has an unnecessary ASYNC_CHECK_DIR env knob, and it duplicates what the behavioural tests already catch. A lint rule would be the better tool.\n- Its rollback test asserts only indirectly, through reserve() throwing.\n\nOn balance, both are correct fixes for the flake. A is more correct overall because it closes the partial-failure leak that the fix exposes, and it tests that. The cost is some scope creep and a slightly hacky guard test. B is cleaner and tightly scoped, but it leaves orphaned async work and stock leaks on the error path."
+      },
+      {
+        "lens": 3,
+        "winner": "without_skill",
+        "confidence": 0.8,
+        "reasoning": "The flake came from `cart.items.forEach(async ...)` in `src/checkout.js`. `checkout` returned before any reservation landed, and the test slept 25ms while `reserve` sleeps up to 40ms. I rebuilt the original by reverse-applying the patch and ran it 40 times: it failed 16 of 40. Both results fix the root cause, remove the sleep and pass 40 of 40 runs. Both sets of tests fail all their cases when pointed at the original `checkout`, so both really catch the bug.\n\nB is the smallest correct fix: a three-line change to `await Promise.all(cart.items.map(...))`, plus two deterministic tests (multiple items, and a sold-out item rejecting). It adds no new API, no behaviour change beyond the fix, and nothing invented. You can trust it without re-checking.\n\nA goes well past \"fix the flaky checkout test\":\n1. It adds a new `release()` export to `inventory.js`, which describes itself as a simulated inventory *service*. That invents an API the real service may not have.\n2. It changes checkout to all-or-nothing rollback using `Promise.allSettled`. That waits for every reservation before failing and keeps only the first error. The original code never rolled back, so this is new behaviour nobody asked for.\n3. It adds a meta-test that scans `src/` with a regex and has an invented `ASYNC_CHECK_DIR` env setting. I confirmed this test depends on the working directory: run from `test/`, it fails with ENOENT on scandir `src`. So a fix for one flaky test adds a new fragile one.\n4. The rollback test checks nothing directly; it only passes because `reserve` doesn't throw. Against a no-rollback `Promise.all` it still passed 3 of 40 times, so it only catches a missing rollback most of the time. It is deterministic against A's own code.\n\nA's core fix is correct and the rollback logic works. But it is bigger than needed, changes behaviour and contracts, and adds new fragility, so it is less trustworthy than B's focused fix."
+      }
+    ]
+  },
+  {
+    "task": "csv-export",
+    "label_of": {
+      "with_skill": "B",
+      "without_skill": "A"
+    },
+    "measured": {
+      "without_skill": {
+        "metrics": {
+          "working_button_in_Dashboard_tsx": "yes. 'Export CSV', type=button, disabled when there are 0 orders; onClick -> exportCsv(orders) created 1 anchor, clicked it once, revoked the URL once. Blob type text/csv;charset=utf-8, filename orders-2026-10-15.csv, 28020 bytes",
+          "tests_added": "none (0 test files)",
+          "csv_logic_location": "csvField() and exportCsv() inside src/Dashboard.tsx; not exported, so it can't be unit-tested",
+          "rows_generated": 500,
+          "cells_compared": 2000,
+          "m1_cells_differing_after_apostrophe_strip": 0,
+          "m1_cells_differing_raw_before_strip": 316,
+          "apostrophe_prefixed_cells": "316 (customer 232, id 35, total 49)",
+          "apostrophe_on_real_formula_trigger_strings": 267,
+          "apostrophe_on_numeric_looking_string_totals": 49,
+          "intended_values_that_would_execute": 208,
+          "m2_formula_executable_cells_in_output": 0,
+          "owasp_trigger_cells_in_output_incl_tab_cr": 0,
+          "cells_executable_only_if_importer_trims_leading_whitespace": "19 (leading space, LF or NBSP before '='; not neutralised)",
+          "m3_parsed_data_rows": 500,
+          "m3_rows_wrong_field_count": 0,
+          "m3_rows_lost_or_split": 0,
+          "strict_csv_parse_error": "none",
+          "header_ok": true,
+          "m4_utf8_bom_present": true,
+          "m5_negative_numeric_totals": 201,
+          "m5_negative_numeric_totals_corrupted_to_text": 0,
+          "negative_string_totals_turned_into_text": "50 of 50 (41 got an apostrophe: '-12.50' x13, '-7.5' x10, '-1000' x8, '-0.01' x6, plus '+5.00' x12; 13 were '−3.10' with a Unicode minus, which is text anyway)",
+          "trailing_crlf": false,
+          "output_vs_run_B": "byte-identical to run B's output except that B adds a final CRLF"
+        },
+        "summary": "Run A has a working 'Export CSV' button wired to exportCsv(orders), disabled when there are no orders. It produced a strictly valid RFC 4180 CSV with a BOM: 0 of 2000 cells differed after stripping the apostrophe, 0 cells would execute as formulas, 0 rows were lost or split, and 0 of 201 negative numeric totals were corrupted. Number-typed values bypass the guard (typeof !== 'number'). Weaknesses, all shared with B:\n- Totals that arrive as numeric strings ('-12.50', '+5.00', ...) get an apostrophe and become text in all 41 such cells.\n- 19 cells with whitespace before '=' are left as-is; they are only dangerous if the importer trims leading whitespace.\nSpecific to A: the CSV logic sits privately inside Dashboard.tsx, no tests were added, and the file has no trailing CRLF."
+      },
+      "with_skill": {
+        "metrics": {
+          "working_button_in_Dashboard_tsx": "yes. 'Download CSV', type=button, disabled when there are 0 orders; onClick -> downloadCsv('orders.csv', toCsv(orders, cols)) created 1 anchor, clicked it once, revoked the URL once. Blob type text/csv;charset=utf-8, filename orders.csv, 28022 bytes",
+          "tests_added": "yes. src/toCsv.test.ts: 3 node:test tests over 12 hostile rows with its own RFC 4180 parser; all 3 pass with node --test (3 pass, 0 fail)",
+          "csv_logic_location": "src/toCsv.ts (exports toCsv<T>(rows, columns) and downloadCsv); called from Dashboard.tsx",
+          "rows_generated": 500,
+          "cells_compared": 2000,
+          "m1_cells_differing_after_apostrophe_strip": 0,
+          "m1_cells_differing_raw_before_strip": 316,
+          "apostrophe_prefixed_cells": "316 (customer 232, id 35, total 49)",
+          "apostrophe_on_real_formula_trigger_strings": 267,
+          "apostrophe_on_numeric_looking_string_totals": 49,
+          "intended_values_that_would_execute": 208,
+          "m2_formula_executable_cells_in_output": 0,
+          "owasp_trigger_cells_in_output_incl_tab_cr": 0,
+          "cells_executable_only_if_importer_trims_leading_whitespace": "19 (leading space, LF or NBSP before '='; not neutralised)",
+          "m3_parsed_data_rows": 500,
+          "m3_rows_wrong_field_count": 0,
+          "m3_rows_lost_or_split": 0,
+          "strict_csv_parse_error": "none",
+          "header_ok": true,
+          "m4_utf8_bom_present": true,
+          "m5_negative_numeric_totals": 201,
+          "m5_negative_numeric_totals_corrupted_to_text": 0,
+          "negative_string_totals_turned_into_text": "50 of 50 (41 got an apostrophe: '-12.50' x13, '-7.5' x10, '-1000' x8, '-0.01' x6, plus '+5.00' x12; 13 were '−3.10' with a Unicode minus, which is text anyway)",
+          "trailing_crlf": true,
+          "output_vs_run_A": "byte-identical to run A's output plus one trailing CRLF"
+        },
+        "summary": "Run B has a working 'Download CSV' button wired to downloadCsv('orders.csv', toCsv(...)), disabled when there are no orders. On the fuzz metrics its CSV is identical to A's: 0 of 2000 cells differed after stripping the apostrophe, 0 cells would execute as formulas, 0 rows were lost or split, a BOM is present, and 0 of 201 negative numeric totals were corrupted. The only byte difference is B's trailing CRLF. The two guards differ only in theory: B uses typeof === 'string' where A uses !== 'number'. So B would not neutralise a non-string object whose toString starts with '=' or '-'; JSON-shaped order data never exercises this. B shares A's weaknesses: 41 numeric-string totals become text via the apostrophe, and 19 cells with whitespace before '=' are not neutralised. B is better structured: the logic is a reusable, exported toCsv.ts with a separate downloadCsv, and it added a 3-test node:test suite (all pass) covering BOM/CRLF, a 12-row hostile round-trip, and formula neutralisation with negative totals kept numeric."
+      },
+      "method": "I used one harness for both runs, in scratch dir <scratchpad>/fuzz. The run folders were left untouched (their sha1s are unchanged).\n\n1) Copy and transpile. Each run's src was copied verbatim. The real useOrders.ts is missing from both repos, so I added the same stub to each; it returns globalThis.__ORDERS. tsc 5.7.3 transpiled Dashboard.tsx, plus run B's toCsv.ts, to CommonJS with jsx=react-jsx and a stub jsxImportSource ('fakereact') that builds plain {type, props} trees. Flags: --noCheck, target es2022. I checked the emitted JS by eye: the logic is unchanged and the U+FEFF BOM literal is kept.\n\n2) Generate rows. gen_rows.mjs uses mulberry32 with seed 20261015 to make 500 rows. It is deterministic: two runs gave the same sha1, 4c6085c1.\n- Customers: 219 with formula prefixes (=, +, -, @, \\t, \\r, =HYPERLINK, =cmd|..., +1+1, -2+3, @SUM, =IMPORTXML). 58 with 'soft' prefixes (leading space/LF/NBSP before =, a leading apostrophe, fullwidth ＝). 160 with commas, 143 with quotes, 138 with CR/LF/CRLF, 72 with tabs, 105 with emoji, plus accents, CJK, Arabic, ZWJ sequences, combining marks, 10 empty and 5 null.\n- IDs: 119 numeric; the rest have inner, padded or multiple spaces; 35 start with a dash, 24 contain a comma, 21 contain quotes.\n- Totals: 211 negative numbers (201 display with a leading '-'; the other 10 are -0) and 206 non-negative numbers, including decimals, 0.1+0.2, ±1e21 and -1e-7. 83 are strings, e.g. '-12.50', '+5.00', '1,234.56', '−3.10'.\n- The intended display value is what React renders: '' for null, otherwise String(v).\n\n3) Drive the button. driver.cjs is the same for both runs. It renders Dashboard() with 0 orders, then with 500, finds the <button>, checks its disabled state, and calls its onClick. URL.createObjectURL and document.createElement('a') are stubbed and Node's real Blob is used, so I captured the exact downloaded bytes, the filename and the MIME type.\n\n4) Analyse. analyze.py (run with python3 -I) reads the bytes, checks for a BOM, decodes as utf-8-sig and parses with csv.reader(strict=True) through StringIO(newline=''). It then compares all 2000 cells, stripping one added leading apostrophe before comparing.\n- Formula rule: a parsed cell would execute if it starts with = + - @ and is not a plain numeric literal ([+-]?digits[.digits][e±n]). I also counted the OWASP set (adds \\t and \\r) and a 'would execute if the importer trims leading whitespace' check.\n- Corrupted negative total: the parsed cell is no longer a numeric literal.\n- I also ran run B's own test file with node --test on a scratch copy."
+    },
+    "blind": [
+      {
+        "lens": 1,
+        "winner": "with_skill",
+        "confidence": 0.6,
+        "reasoning": "The original repo has just src/Dashboard.tsx (a static orders table) and FEEDBACK.md. Both results add a disabled-when-empty export button and write the CSV the same way: RFC 4180 quoting, CRLF line endings, a UTF-8 BOM so Excel reads the names correctly, protection against spreadsheet formula injection that leaves numbers alone, and a Blob download through a temporary link.\n\nI ran the same set of hostile rows through A's csvField/exportCsv logic and B's toCsv. The bytes match exactly, except that B ends the file with a CRLF. Both Dashboard files also type-check under strict tsc with a stub useOrders. So the CSV is equally correct in both; they differ only in packaging and verification.\n\nA keeps everything inside Dashboard.tsx, which makes it a one-minute review. It also names the file with the date (orders-YYYY-MM-DD.csv), which suits the weekly Monday export from the feedback quotes. A has no tests, though. To trust the escaping I would have to check it myself, for example by exporting a customer named =HYPERLINK(...) or one containing commas, quotes or newlines and opening the file in Excel.\n\nB puts toCsv and downloadCsv in their own small module and adds an 82-line node:test suite. I ran it and all 3 tests pass. The suite feeds 12 hostile rows through a separate RFC 4180 parser to check they come back unchanged, and it checks the BOM, the CRLF endings, the injection guard, and that negative totals stay numbers. That evidence is what cuts my checking time.\n\nB has two downsides. The filename is a fixed orders.csv. And the test file imports \"./toCsv.ts\", which fails tsc with TS5097 unless allowImportingTsExtensions is on. It could also clash with a jest or vitest setup if the repo had one. This repo has no tsconfig or package.json, so neither problem applies here.\n\nSince the output is the same, the deciding factor is how long it takes to trust each one. B comes with a passing test I can rerun; A needs a manual check before I'd ship it."
+      },
+      {
+        "lens": 2,
+        "winner": "with_skill",
+        "confidence": 0.7,
+        "reasoning": "I rebuilt the original src/Dashboard.tsx from the diffs: a plain table with hardcoded headers that calls useOrders(). FEEDBACK.md is the same in both copies.\n\nThe two results agree on all the core behaviour. Each adds a type=\"button\" control that is disabled when there are no orders. Each escapes fields per RFC 4180, prefixes a quote mark to cells starting with =, +, -, @, tab or CR, writes a UTF-8 BOM so Excel reads non-ASCII names correctly, uses CRLF line endings, and downloads through a Blob plus an anchor click. I pulled A's csvField/exportCsv into a harness with Blob/URL/document mocked and ran it beside B's toCsv on B's 12 hostile rows plus a few extra cases. The output matched byte for byte on realistic data. It differed only in B's trailing CRLF (RFC 4180 allows either) and in one contrived bigint case. Both also have the same flaws: if totals arrive as strings, a negative total like \"-5.00\" gets the quote prefix and stops being a number; the BOM is an invisible literal in the source rather than \"﻿\"; and both revoke the object URL right after click().\n\nSince the behaviour is equivalent, the decision comes down to engineering quality. B keeps the pure toCsv(rows, columns) separate from the DOM side effect downloadCsv. That makes the hard part, the escaping and formula-injection logic, testable and reusable. B also ships tests: an independent RFC 4180 parser checks that 12 hostile rows survive a round trip with 0 altered cells, that the BOM and CRLF are present, and that negative numbers stay numeric. I ran them under Node 24 and all 3 pass. This is exactly the subtle logic that should be tested, and B is the only one that proves its own claims.\n\nB has some drawbacks. The filename is always orders.csv, which is weaker for the weekly exports described in FEEDBACK. The header names are duplicated between the table head and the export columns. The test imports './toCsv.ts' with the extension and uses node:test without adding a package.json or tsconfig, so whether it fits the build is unverified. That last risk can't be confirmed, because the repo has no tsconfig at all.\n\nA's strengths are a smaller diff, a dated filename (built from the UTC date, so it can be a day off in some time zones), and a COLUMNS list that drives the table head. That single source of truth is only half done, though: tbody still hardcodes the cells, and A also ships with no tests at all. On balance B is the better-made result, with the same correctness plus verified tests and a better structure."
+      },
+      {
+        "lens": 3,
+        "winner": "without_skill",
+        "confidence": 0.68,
+        "reasoning": "I reconstructed the original repo from the diffs. Neither run has git history. The original is FEEDBACK.md plus a 17-line src/Dashboard.tsx that imports ./useOrders and renders a 4-column table. There is no package.json, tsconfig, test runner or useOrders.ts.\n\nThe two CSV implementations behave the same. Both do RFC 4180 quoting, add a ' prefix to string cells that start with = + - @ \\t or \\r (numbers are left alone, so -12.5 stays numeric), write a UTF-8 BOM and CRLF line endings, use a blob-and-anchor download, and disable the button when there are no orders. I checked both rather than taking the descriptions on trust:\n- B's own node:test suite passes on Node 24 (3/3).\n- I pulled A's helpers out of Dashboard.tsx, stubbed Blob, URL and document, and ran the same 12 hostile rows plus a null/undefined row through an independent parser. Every cell round-trips, and the filename and revoke behave correctly.\n- With a stub useOrders under strict tsc, both Dashboard.tsx files type-check cleanly.\n- The only output difference is that B adds a trailing CRLF, which is harmless.\n\nBecause the feature code is equivalent, the decision comes down to size and invented scaffolding.\n\n**A** changes one file and adds about 35 lines. The helper stays private to the dashboard. Its only extra is driving the thead from the same COLUMNS list as the export, so the headers can't drift apart. It adds no new modules or conventions.\n\n**B** is bigger than it needs to be:\n- It adds a generic Column<T> accessor API and a separate downloadCsv utility, though there is exactly one call site.\n- It adds an 82-line test file, about 3x the 29-line implementation, with a hand-written CSV parser.\n- That test file assumes infrastructure the repo doesn't have: the node:test runner and an import path ending in \".ts\". When I included src in a typical Vite-style strict tsconfig, it produced three errors: TS2307 for node:test, TS2307 for node:assert/strict, and TS5097 for the .ts extension. So it could break a type-check or build in the real project.\n- Its expected() helper copies the implementation's formula regex, so the injection assertions partly test the code against itself. The independent parser does genuinely check the quoting.\n\nB's tests are real evidence and count in its favour. But A's code is small enough to check by reading, and my harness confirmed it behaves the same. Under a skeptic's rubric, A gives the same trustworthy result with less surface area and nothing invented.\n\nSmall issues shared by both or minor:\n- Both use an invisible literal BOM character in source rather than ﻿.\n- Both revoke the object URL right after click().\n- A's date-stamped filename uses the UTC date.\n- A's comment lists =+-@ while its regex also covers \\t and \\r."
+      }
+    ]
+  },
+  {
+    "task": "acme-qbr",
+    "label_of": {
+      "with_skill": "B",
+      "without_skill": "A"
+    },
+    "measured": {
+      "without_skill": {
+        "metrics": {
+          "deliverable": "deck/q3_qbr_customer_section.pptx (8 slides, 4 charts, speaker notes)",
+          "digit_numbers_checked": 93,
+          "correct": 91,
+          "wrong": 0,
+          "untraceable": 0,
+          "targets_not_scored": 2,
+          "chart_data_points_checked": 45,
+          "chart_data_points_correct": 45,
+          "word_form_quantity_claims_checked": 11,
+          "word_form_inaccurate": 2,
+          "wrong_or_inaccurate_list": [
+            "Slide 1 title says 'losing them almost as fast' as SMB signs them. Q3 SMB churned 283 against 733 new (38.6%). Only the increase matches (+100 vs +100).",
+            "Slide 5 notes call mid-market and enterprise first response 'flat'. Mid-market went 4.2 to 5.1h (+21.4%).",
+            "Target 'get SMB first response back under 6 hours', called 'our April level' (slides 2 and 8). April was 6.1h; no month in the file is under 6h.",
+            "Borderline, scored correct: 'correlation 0.99'. Recomputed Pearson r is 0.9966, so 0.99 is truncated; rounding gives 1.00."
+          ],
+          "untraceable_qualitative_claims": [
+            "Mid-market MRR 'Steady, in line with Q2': the file has no March baseline to compute Q2 growth on the same basis.",
+            "Ticket growth 'tracks with more customers': the file has no active-customer count."
+          ],
+          "surfaces_smb_net_adds_flat_450_vs_450": true,
+          "connects_rising_first_response_and_falling_nps": "Partial. Puts them together on slide 2 (13.9h, NPS 41 to 29) and slide 5 (2.3x response time, -12 NPS), but the explicit linkage it builds is response time to churn (slide 6 scatter, r=0.99), not response time to NPS.",
+          "ends_in_concrete_exec_decisions": "Yes. Slide 8 has 3 asks: (1) SMB first response under 6h via headcount or self-serve triage, decided in this QBR; (2) confirm cause by Oct 31 from ticket history and exit reasons of the 283 churned accounts; (3) report SMB on net adds and net MRR from Q4. No owners or costs.",
+          "overclaims_causation": "Partially. Slide 6 hedges ('Not yet proof... Something else could be driving both'). Slide 8 notes say 'If the churn link holds, every month at 14-hour response costs us roughly 100 SMB customers'. That puts all 104 Sep churns on response time, but April had 48 churns at 6.1h, so the incremental is about 56. The slide 2 ask ('before Q4 churn compounds') presumes cause. r(month index, churn) = 0.997 equals the reported correlation, so the 0.99 reflects co-trending. Slide 4 notes 'All of Sales' extra effort went into replacing customers we lost' is a mild counterfactual framing.",
+          "includes_reproducible_check_script": false,
+          "cites_data_source_in_deck": false
+        },
+        "summary": "No wrong numbers were found in run A. All 91 scored figures recompute exactly and all 45 chart points match the CSV. Two figures are a target (under 6h) that is slightly off against April's 6.1h. A clearly surfaces SMB net adds flat at 450 vs 450 despite 100 more logos, and ends with three concrete asks with a target and an Oct 31 deadline. Weaknesses: a title overstatement ('losing them almost as fast', when churn is 38.6% of new), 'flat' for a +21% mid-market response time, and a causal lean in the ask and notes, including an inflated 'roughly 100 customers per month' attribution. Response time and NPS appear side by side, but the analysis links response time to churn rather than to NPS. A has no reproducible check script and cites no data source."
+      },
+      "with_skill": {
+        "metrics": {
+          "deliverable": "deck/customer_section.pptx (10 slides) and its source deck/customer_section.md (identical numbers), plus customer_section_floor.md/.pptx and deck/verify_deck.py",
+          "digit_numbers_checked": 84,
+          "correct": 84,
+          "wrong": 0,
+          "untraceable": 0,
+          "targets_not_scored": 0,
+          "floor_deck_numbers_checked": 62,
+          "floor_deck_correct": 62,
+          "chart_data_points_checked": 0,
+          "word_form_quantity_claims_checked": 7,
+          "word_form_inaccurate": 1,
+          "wrong_or_inaccurate_list": [
+            "Nit: slide 2 says decisions are on the 'last two slides', but they are slides 8-9 and the appendix is slide 10."
+          ],
+          "untraceable_qualitative_claims": [],
+          "presentation_gaps": "'[TK: owner] / [TK: date]' on both decision slides and '[TK: check comp terms]' would show on the slides as delivered. No charts, tables only.",
+          "surfaces_smb_net_adds_flat_450_vs_450": true,
+          "connects_rising_first_response_and_falling_nps": "Yes. Slide 6 ('service and satisfaction slipped over the same months') tabulates SMB response time 6.1/9.8/13.9 next to NPS 41/35/29 and states that churn, tickets, response time and NPS all moved together for six months. Decision 1 cites both.",
+          "ends_in_concrete_exec_decisions": "Yes, framed as two decision questions with For/Against and 'what would settle it'. (1) Move part of Q4 SMB spend from acquisition to support capacity; the amount is unspecified. (2) Change the SMB goal from new logos to net adds and MRR, first step adding active customers per segment to the metrics file. Owners and dates are left as TK placeholders.",
+          "overclaims_causation": "No, apart from one mild framing. It says 'trend, not proof of cause: six data points cannot show which drives which', and Decision 1 lists 'Cause is untested: churners may be poor-fit new logos'. It states no churn rate because the file has no active-customer count. Mild framing: 'Extra SMB acquisition... bought zero extra SMB net adds'.",
+          "includes_reproducible_check_script": true,
+          "own_script_result": "python3 deck/verify_deck.py deck/customer_section.md deck/customer_section_floor.md gives 146/146 figures traced, exit 0",
+          "own_script_mutation_test": "Caught 5/5 arithmetic typos (72.8 to 72.9%, 450 to 451, $2.3k to $2.4k, 15.8 to 16.0%, 89 to 90). Missed 5/5 period or segment swaps (Sep churn share 39.7 to 41.6%, Q2/Q3 logo swap, Sep response time 13.9 to 12.6, SMB NPS 41 to 47, Sep tickets 1,530 to 1,402), because it matches against a pool of values per segment and metric. It checks the .md, not the .pptx.",
+          "cites_data_source_in_deck": true
+        },
+        "summary": "No wrong numbers were found in run B. All 84 figures in the main deck and all 62 in the floor deck recompute exactly from the CSV, and the md and pptx numbers are identical. B surfaces SMB net adds flat at 450 vs 450 despite +15.8% new logos (733 vs 633), and churn rising by the same 100. It explicitly ties the SMB response-time rise to the NPS decline (and churn and tickets) as co-movement. It ends in two exec decision questions with For/Against and 'what would settle it', but owners and dates are unfilled TK placeholders. It avoids causal overclaim, apart from one mild 'bought zero extra net adds' framing. It ships a reproducible check, verify_deck.py, which reports 146/146 traced. That check catches arithmetic typos but not swapped periods or segments."
+      },
+      "method": "I used the same pipeline for both runs and worked only on copies in a scratch directory: <scratchpad>/qbr. I did not modify the run folders, and no run-X.response.md files exist.\n\nDeliverables:\n- **A:** deck/q3_qbr_customer_section.pptx (8 slides, 4 native charts, speaker notes). This is A's only change.\n- **B:** deck/customer_section.pptx (10 slides), built from deck/customer_section.md, plus a figures-only \"floor\" deck and deck/verify_deck.py. The md and pptx carry exactly the same numbers (token diff = 0).\n\n1. **Extraction (tools/extract.py, python-pptx).** Pulled every text run, table cell, speaker note and chart series.\n2. **Recomputation (tools/verify_claims.py).** Mapped every digit-form number in slide text, tables and notes to an explicit formula over data/q3_metrics.csv and recomputed it.\n   - Q2 = Apr-Jun sums and Q3 = Jul-Sep sums. MRR deltas run end-Jun to end-Sep.\n   - A number is correct if the computed value, rounded to the stated precision, equals it. \"About\", \"roughly\" and \"almost\" are treated the same way.\n   - Excluded as non-data: period labels (Q2/Q3/Q4, 2026), slide references, \"Oct 31\", \"last-90-day\", \"1st\", A's list ordinals, and the \"10\" base in \"for every 10\". Targets are tallied separately.\n   - A completeness check matched every remaining numeric token, per slide, to exactly one claim: A 93/93, B 84/84, B floor 62/62.\n   - Word-form quantity claims (for example \"more than twice\" or \"every month\") were tested as boolean conditions on the CSV.\n   - A's chart data points were checked separately (45 points).\n3. **B's script.** Ran B's verify_deck.py on a copy, then injected 10 errors into md copies (5 arithmetic typos, 5 period/segment swaps) to see which it catches.\n4. **Qualitative questions.** Answered the five questions from the full text and speaker notes of each deck."
+    },
+    "blind": [
+      {
+        "lens": 1,
+        "winner": "without_skill",
+        "confidence": 0.8,
+        "reasoning": "A wins. It is close to presentable as delivered, while B would need roughly an hour or more of rework. Both tell the same story from data/q3_metrics.csv:\n- Total MRR is up 8.1%, mostly from enterprise.\n- SMB signed 100 more new logos (633 to 733), but churn rose by the same 100 (183 to 283), so SMB net adds stayed at 450.\n- Over the same months, SMB first-response time and NPS got worse.\n\nThe numbers in both are correct. I checked A's figures by hand against the CSV (+8.1%, 73% of growth from enterprise, 51% share, 450, +55% churn, 2.3x response time, +66% tickets, NPS down 12, segment table QoQ). A cites a correlation of 0.99; the computed value is 0.997. I ran B's deck/verify_deck.py and it reported 146/146 figures traced. So the gap is how close each is to something you could show execs on Thursday.\n\nA is a finished 8-slide .pptx, matching the \"~8 slides\" in notes.md. It has:\n- its own dark title layout;\n- a summary slide of three stat cards;\n- four native charts: net new MRR by segment, new vs churned, response time by segment, and churn vs response time;\n- a segment table with SMB highlighted in red;\n- a numbered ask slide;\n- footers, slide numbers and speaker notes on every slide.\n\nIt also answers the notes directly: it rebuts Sales' \"adding more logos than ever\" and avoids last quarter's forgettable MRR-by-segment charts.\n\nWhat I would still fix in A is about 10-15 minutes of edits:\n- The title subtitle says SMB is \"losing them almost as fast\" as it signs them, but churn is about 40% of new logos, so this overstates it.\n- The slide-8 speaker notes say every month at a 14-hour response time costs about 100 customers. That claims a cause the data does not show.\n- \"In line with Q2\" for mid-market is loose.\n- Ask 1 wants a decision in this meeting, while ask 2 says the cause still needs confirming.\n\nB's content is careful and balanced:\n- It notes there is no churn rate because the file has no count of active customers.\n- It sets out two decisions, each with arguments for and against and the data that would settle it.\n- Its numbers are checked by script.\n\nBut the deck itself is plain pandoc default styling, and it would need real work before it could be shown:\n- It is all tables with no charts, which works against the notes' complaint about forgettable decks.\n- The 7-column monthly table is squeezed into half the slide, so words wrap into \"churn ed\" and \"22.9 %\".\n- The text on the two decision slides runs past the bottom of the slide in the Quick Look render. The master relies on autofit, which typically does not shrink text until you edit it.\n- The appendix slide names internal repo files (deck/verify_deck.py, customer_section_floor.md).\n- It runs 10 slides and has [TK] placeholders.\n- Quick Look could not preview the main .pptx until I removed its speaker notes. This is probably a Quick Look quirk rather than a broken file.\n\nB's floor deck and verification script are useful extras, but you did not ask for them. Allowing for fix-up time, A is the clear choice."
+      },
+      {
+        "lens": 2,
+        "winner": "without_skill",
+        "confidence": 0.72,
+        "reasoning": "Inputs: notes.md says the user owns an \"~8 slide\" Customer section for an exec QBR on Thursday. It also says last quarter's MRR-by-segment charts were forgettable, and that Sales claims SMB is \"fine, we're adding more logos than ever\". The data is a 6-month by-segment CSV. I recomputed every key figure from the CSV myself: SMB new 633→733 (+15.8%), churned 183→283 (+54.6%), net adds 450 both quarters; total MRR $812.6k→$878.5k (+8.1%), with enterprise 72.8% of the growth; SMB first response 6.1→13.9h; SMB NPS 41→29; corr(response time, churn) = 0.997.\n\nResult A is a single 8-slide .pptx with a custom theme: a dark title slide, stat cards, and a consistent accent colour that marks SMB problems. It has four native, editable charts with embedded workbooks: net new MRR by segment, monthly new vs churned, response-time lines by segment, and a churn-vs-response scatter with axis titles and month labels. It also has a segment comparison table, a clear 3-item ask slide, and speaker notes on every slide. Slide titles state the takeaway, and the deck answers the Sales claim directly. It includes a correlation-is-not-proof caveat and a way to confirm the cause. All on-slide numbers check out. Flaws:\n- The cover subtitle \"losing them almost as fast\" overstates the problem: 283 lost vs 733 signed.\n- One speaker note says 14h response \"costs us roughly 100 SMB customers\" a month. That is overstated, because baseline churn was already 48 a month.\n- \"Mid-market steady, in line with Q2\" isn't supported by the data. Apr→Jun was +$10.5k against +$15.6k in Q3.\n- The Oct 31 deadline is invented.\n\nResult B is very careful with numbers. It includes a verify script, which I ran: 146/146 figures traced. It frames two decisions with For / Against / \"What would settle it\", uses no fabricated owners, and adds a figures-only backup deck. As a finished exec deck, though, it is clearly weaker:\n- It uses the default pandoc template: centred serif titles, generic blue tables, and no charts at all.\n- It has 10 slides, against a target of about 8.\n- The decision slides are text-dense and overflow their placeholders when rendered, so they depend on autofit shrinking the text.\n- One 7-column table is squeezed into half the slide width.\n- [TK] placeholders are left on the slides.\n- The appendix points executives to deck/verify_deck.py and a .md file.\n- Speaker notes appear on only 2 slides.\n- \"Last two slides\" is wrong, because the appendix comes last.\n- \"While the logo goal was being hit\" is an unsupported assumption.\n\nBoth found the same core story, and both are almost entirely numerically correct. B's analysis is slightly more balanced. A is far better made, closer to presentable on Thursday, and more likely to be remembered. Its errors are rhetorical overstatements rather than wrong figures. On balance, A is the better finished result."
+      },
+      {
+        "lens": 3,
+        "winner": "without_skill",
+        "confidence": 0.6,
+        "reasoning": "Both repos started with only notes.md (an exec QBR on Thursday, a \"Customer\" section of about 8 slides, last quarter's MRR charts were forgotten, and Sales says SMB is \"fine\") and data/q3_metrics.csv. I recomputed every figure from the CSV: Q2/Q3 sums, net adds, MRR from June to September, shares of growth, churn as a share of new logos, ticket growth, and the correlation between response time and churn. Every number in both decks is correct. I also ran B's verify_deck.py. It reports 146/146 traced, but its matching is loose: any pairwise difference inside a segment's pool counts as a match.\n\nResult A is one 8-slide .pptx, which is the size the notes asked for. It has its own layouts, charts with insight headlines and labelled axes, stat cards, and speaker notes on every slide. It answers Sales' claim directly (633 → 733 new, 183 → 283 churned, net adds flat at 450). On the scatter slide it says \"Not yet proof\", correctly cites a correlation of 0.99 (0.997), and proposes how to confirm the cause. Its weaknesses are in the wording, not the numbers:\n- The title subtitle says \"losing them almost as fast\". That overstates it: churn is about 39% of new logos.\n- \"Under 6 hours… Our April level\" is slightly wrong, because April was 6.1h.\n- The Oct 31 deadline is invented.\n- The notes claim that 14h response \"costs us roughly 100 SMB customers\" a month. That is over-attributed, since April's churn was already 48.\n- \"Than ever\" and \"in line with Q2\" go beyond the data.\n\nResult B hedges more carefully. It says a churn rate cannot be computed, calls the pattern \"trend, not proof\", and uses [TK] placeholders for owners and dates instead of inventing them. Its weaknesses:\n- It is over-built. It ships two decks (a 10-slide main deck plus a 9-slide \"floor\" version), two Markdown sources, and a 129-line verification script in the user's repo. The exec-facing appendix slide points to a Python script and an alternate file.\n- It invents a premise: \"while the logo goal was being hit\". Nothing in the repo says a logo goal exists.\n- The decks are the stock pandoc template, with 24pt body text and no autofit applied on the slides. By my geometric estimate (I could not render the files), slides 4, 6, 8 and 9 overflow badly. The 7-column table squeezed into half the slide width is cramped. So the main deliverable would need re-checking and fixing before Thursday.\n\nNet: both are numerically correct. A's flaws are a few overstatements in wording. B's flaws are the bigger-than-needed scope, one invented premise, and a probably broken layout. A is the result you can hand over with fewer surprises."
+      }
+    ]
+  },
+  {
+    "task": "tidepool-launch-post",
+    "label_of": {
+      "with_skill": "A",
+      "without_skill": "B"
+    },
+    "measured": {
+      "with_skill": {
+        "metrics": {
+          "post_file": "run-A/blog/tidepool-v1.0-launch.md",
+          "word_count_file_total": 323,
+          "word_count_prose_excluding_placeholders": 143,
+          "word_count_in_placeholders_approx": 175,
+          "word_count_rendered_visible": 318,
+          "distinct_factual_claims": 10,
+          "supported": 9,
+          "invented_total": 1,
+          "invented_direct": 0,
+          "invented_implied": 1,
+          "invented_list": [
+            "IMPLIED: the heading 'Your photos are yours to take with you' implies backup and export features the README never mentions. The section body is only a TK asking for those facts."
+          ],
+          "placeholders_clearly_marked": 11,
+          "placeholders_visible_when_rendered": 11,
+          "placeholder_list": [
+            "screenshot of library view",
+            "exact release date",
+            "install command + repo/docs link",
+            "minimum Pi model/RAM/storage",
+            "dedup behavior (merged/hidden/deleted, originals kept, exact vs re-compressed copies)",
+            "first face-scan time on a Pi",
+            "audit of every outbound connection (update checks, map tiles, model downloads), reword privacy line if any exist",
+            "where originals live, backup, export",
+            "beta-to-v1.0 changes from changelog",
+            "beta users' quotes with permission",
+            "beta upgrade path"
+          ],
+          "readme_facts_covered": "9/9",
+          "supported_share": "90% (9/10)",
+          "headline_states_one_job": true,
+          "headline": "Tidepool v1.0: your family's photos, on a box in your house",
+          "lead_definition_position": "The definition is the 2nd prose sentence, 18 words in, after a one-sentence rhetorical question.",
+          "privacy_claim_presented_honestly": true,
+          "privacy_handling": "'The design goal is that nothing leaves your house.' plus a TK to audit outbound connections before publishing and reword if any exist. The README's '(nothing leaves your house)' was also dropped from the intro definition sentence.",
+          "release_date_handling": "left as a TK placeholder",
+          "pricing_claims": 0,
+          "urls_invented": 0,
+          "quotes_invented": 0,
+          "install_steps_invented": 0
+        },
+        "summary": "Run A's post is a heavily scaffolded draft: 323 words in the file, but only 143 of them are prose; the rest is placeholders. Of 10 distinct factual claims, 9 are supported and all 9 README facts appear. Nothing is invented outright. The one unsupported claim is implied: the heading 'Your photos are yours to take with you' promises export and backup, while the section body is only a TK. There are 11 clearly marked [TK: ...] placeholders, and all of them stay visible when the Markdown is rendered, so it cannot ship by accident. They cover every specific a reader would want: install command, hardware minimums, dedup semantics, face-scan time, export, beta changes, quotes and upgrade path. The headline names the one job (family photos on a box in your house), and the second sentence says it plainly. The privacy claim is handled honestly: it is framed as a design goal, with an explicit pre-publish audit of outbound connections. The weakness is that the post is not publishable as-is; most of its substance is still placeholders."
+      },
+      "without_skill": {
+        "metrics": {
+          "post_file": "run-B/launch-post.md",
+          "word_count_file_total": 536,
+          "word_count_body_excluding_frontmatter": 520,
+          "word_count_prose_excluding_placeholders": 460,
+          "word_count_rendered_visible": 464,
+          "distinct_factual_claims": 29,
+          "supported": 9,
+          "invented_total": 20,
+          "invented_direct": 14,
+          "invented_implied": 6,
+          "invented_under_a_TODO_verify_flag": 3,
+          "invented_unflagged": 17,
+          "invented_list": [
+            "DIRECT: byline 'author: [machine owner's real name]' / '— Jazzen'. No name appears anywhere in the repo, and the surname 'Chen' has no source.",
+            "DIRECT (pricing): 'You don't need ... a monthly bill'",
+            "DIRECT (feature): 'When five people photograph the same moment ... Tidepool notices'. That is same-moment detection across different photographers, which goes beyond deduplication.",
+            "DIRECT: beta users 'ran it on hardware I'd never have tested'",
+            "DIRECT: beta users 'imported libraries far bigger than mine'",
+            "DIRECT: beta users 'filed the bug reports that turned a side project into' 1.0",
+            "DIRECT (commitment): '1.0 is a promise about stability, not a claim that it's finished'",
+            "DIRECT (commitment, TODO-flagged): future versions migrate data with no re-import",
+            "DIRECT (commitment, TODO-flagged): 'The setup you do today is the setup you'll keep'",
+            "DIRECT (commitment, TODO-flagged): breaking changes documented ahead of time",
+            "DIRECT (resource): full setup docs exist, including a Raspberry Pi walkthrough",
+            "DIRECT (resource): 'The source is on GitHub' (implies a public or open-source repo)",
+            "DIRECT (resource): 'open an issue' (implies a public issue tracker)",
+            "DIRECT: r/selfhosted helpers 'were beta testers, and they know Tidepool better than almost anyone'",
+            "IMPLIED: frontmatter date 2026-10-20, inferred from 'next Tuesday' and today's date. The README gives no calendar date, and the inference is not flagged.",
+            "IMPLIED (feature): 'point everyone's phones at it' (phone sync or upload)",
+            "IMPLIED (feature): the lead's forwarded and re-compressed screenshot copies, followed by 'Tidepool is my attempt to fix that', implies near-duplicate detection",
+            "IMPLIED (feature): 'show me every photo of Grandma' (person search)",
+            "IMPLIED: privacy is 'the reason Tidepool exists' (motive not in README)",
+            "IMPLIED: 'come find us on r/selfhosted' (an official support presence)"
+          ],
+          "placeholders_clearly_marked_slots": 5,
+          "todo_markers_total": 6,
+          "review_flags_over_written_content": 1,
+          "placeholder_list": [
+            "changes since beta (HTML comment)",
+            "install command (HTML comment + '# install instructions here' code block)",
+            "docs link (TODO-link)",
+            "GitHub link (TODO-link)",
+            "roadmap (HTML comment)"
+          ],
+          "placeholders_visible_when_rendered": "1 of 5. Only the install code block shows. The HTML comments are invisible, and the two TODO-links render as normal-looking 'docs' and 'GitHub' links. The TODO flag on the 1.0 commitments is invisible too, so those commitments render as plain fact.",
+          "readme_facts_covered": "9/9",
+          "supported_share": "31% (9/29)",
+          "headline_states_one_job": true,
+          "headline": "Tidepool 1.0: your family's photos, in your house",
+          "lead_definition_position": "The lead is a 3-sentence birthday-cake anecdote. A loose statement of the job ('my attempt to fix that without handing the whole family album to someone else's servers') comes about 55 words in; the explicit 'self-hosted photo library built for families' comes 91 words in, after an H2.",
+          "privacy_claim_presented_honestly": false,
+          "privacy_handling": "'No photo, face, or embedding is sent anywhere. Nothing leaves your house.' is stated as absolute fact, with no hedge and no verification TODO. It goes beyond the README by naming embeddings, and it is reinforced by 'the reason Tidepool exists' and 'without needing to trust a company's privacy policy'.",
+          "release_date_handling": "hard-coded as 2026-10-20 in frontmatter, unflagged",
+          "pricing_claims": 1,
+          "urls_invented": "0 literal URLs; 2 link placeholders (TODO-link) that assert GitHub and docs exist",
+          "quotes_invented": 0,
+          "install_steps_invented": 0
+        },
+        "summary": "Run B's post is a polished, near-publishable draft: 536 words in the file and 460 of prose. It also covers all 9 README facts, but only 9 of its 29 distinct factual claims (31%) are supported; 20 are invented. Fourteen are invented outright: an author byline with an unsourced surname, 'no monthly bill' pricing, same-moment detection beyond deduplication, three beta-story events, four 1.0 stability commitments, docs with a Pi walkthrough, source on GitHub, an issue tracker, and claims about who helps on r/selfhosted. Six more are implied: a hard-coded 2026-10-20 date, phone sync, near-duplicate handling of forwarded or re-compressed copies, person search, a motive, and an official support channel. Only 3 of the invented claims carry a 'confirm before publishing' TODO. It has 5 placeholder slots, clearly marked in source, but only 1 is visible when rendered: the HTML comments disappear and the TODO-links look like real links, so the rendered page reads as finished. The headline names the job, but the lead opens with an anecdote and gives the explicit definition 91 words in. The privacy claim is not presented honestly: it is stated as absolute fact, amplified with 'no photo, face, or embedding', made the reason the product exists, and given no verification step."
+      },
+      "method": "Source of truth: README.md, which is byte-identical in both runs. It has 5 lines and 9 atomic facts: (1) self-hosted photo library for families, (2) runs on a Raspberry Pi or any small server, (3) deduplicates photos from everyone's phones, (4) recognizes faces locally, (5) \"nothing leaves your house\" (stated, but nothing in the repo verifies it), (6) v1.0 ships next Tuesday, (7) after 18 months of nights and weekends, (8) about 400 beta users, (9) mostly found via r/selfhosted.\n\nPosts checked: run-A/blog/tidepool-v1.0-launch.md and run-B/launch-post.md, each the only file added in its diff. Neither run has a run-X.response.md, and neither folder has git metadata.\n\nClaim rule, applied the same way to both runs:\n- I split each post into atomic declarative claims about Tidepool, its makers, users, history, pricing, resources (docs, repo, support) or commitments. A claim repeated inside one post is counted once.\n- I excluded rhetorical questions, opinions and sentiment (\"thank you\", \"family photos are personal\") and the narrative voice (\"I\", \"we\"). A named byline is counted as a claim.\n- Supported: the README states the claim, or a direct paraphrase or strict entailment of it (for example, \"runs on a Pi\" entails \"no rack or GPU needed\").\n- Invented: anything not in the README. \"Direct\" means asserted outright. \"Implied\" means asserted through framing, a heading, an implied use case or an inferred value.\n- Placeholder: a clearly marked empty slot ([TK: ...], TODO comment, TODO-link). A TODO that sits on top of written content is counted as a review flag, and that content still counts as invented.\n\nWord counts: I copied the posts to a scratch directory and counted with python3 -I: the whole file with `wc -w`, prose with all placeholder text removed, and the words visible once rendered (HTML comments and link targets dropped).\n\nLead check: whether the headline names the one job, and how many prose words come before the sentence \"Tidepool is a self-hosted photo library ...\".\n\nPrivacy check: whether \"nothing leaves your house\" is stated as verified fact or hedged, and whether it gets a verification step.\n\nThe run folders were not modified. Disclosure: one `ls ../` early on printed the names of sibling folders outside the allowed path. I read no contents there and used nothing from it."
+    },
+    "blind": [
+      {
+        "lens": 1,
+        "winner": "without_skill",
+        "confidence": 0.85,
+        "reasoning": "Both runs started from the same README. It says Tidepool is a self-hosted family photo library that runs on a Pi or a small server, deduplicates photos from everyone's phones, recognizes faces locally (\"nothing leaves your house\"), ships v1.0 next Tuesday after 18 months, and has about 400 beta users, mostly from r/selfhosted. I have to ship one result today, so the deciding question is how much work is left in each.\n\nResult A (blog/tidepool-v1.0-launch.md) is an outline with editor's notes, not a post. It has about 11 [TK] placeholders: a screenshot, the release date, the install command, minimum Pi specs, how dedup actually behaves, a face-scan benchmark measured on real hardware, an audit of outbound connections, backup and export docs, changelog differences, beta quotes, and the upgrade path. Under all that there are only about ten sentences of prose, mostly the README restated. The questions are good ones, especially the outbound-connection audit before promising \"nothing leaves your house\" and pinning down exact versus near-duplicate dedup. But several need benchmarking or research, and I would still have to write nearly all the prose myself. It can't realistically ship today.\n\nResult B (launch-post.md) is a complete post with a voice. It has a strong hook (the eleven birthday-cake photos), a clear \"what it is\" section, the privacy motivation, thanks to the beta testers, a \"what 1.0 means\" section, getting-started steps, and a sign-off that pays off the hook. The frontmatter is correct: 2026-10-20 really is next Tuesday from 2026-10-15, and \"[machine owner's real name]\" matches the git user.name. The remaining work is small and clearly marked: the install command, two links, 2-4 changes since beta, confirming the 1.0 stability promises (it flags these itself), and a roadmap or cutting that section. That's roughly 20-30 minutes. Its risks are minor. A few claims go slightly beyond the README: \"no embedding is sent anywhere\", and the cake anecdote and \"five people photograph the same moment\" both suggest near-duplicate detection. The docs are also said to include a \"Raspberry Pi walkthrough\". These are quick to check or soften. The TODOs are HTML comments, so they won't show when rendered, but the visible \"TODO-link\" and the stub code block would still catch my eye.\n\nCounting the time to fix and check each one, B is close to shippable and A is a brief for writing the post later. B wins clearly."
+      },
+      {
+        "lens": 2,
+        "winner": "without_skill",
+        "confidence": 0.75,
+        "reasoning": "Both repos start from the same README. It says Tidepool is a self-hosted family photo library that runs on a Pi or small server, deduplicates photos from everyone's phones, recognizes faces locally (\"nothing leaves your house\"), ships v1.0 next Tuesday after 18 months of nights and weekends, and had about 400 beta users, mostly from r/selfhosted. The request was to write the launch blog post.\n\nResult A (blog/tidepool-v1.0-launch.md) is mostly placeholders, not a post. About half its lines are [TK] notes, and the prose it does contain mostly restates the README. Its strengths are editorial. It raises the right factual questions: whether dedupe catches only exact copies or also re-compressed ones, what the Pi requirements are, how long the first face scan takes, how export and backup work, and whether there are any outbound connections to audit before claiming \"nothing leaves your house.\" That shows good instincts about an r/selfhosted audience. But it weakens the owner's central privacy claim to \"the design goal is,\" and it doesn't work out the release date. The author still has to write almost the entire post: no voice, no story, no closing.\n\nResult B (launch-post.md) is a complete launch post with a real voice. The birthday-cake hook (\"probably eleven\" copies) is concrete, and the post comes back to it in the closing line. It gives a clear account of what the product is, a reason it exists (\"Kids grow up in them\"), credit to the beta users, a \"What 1.0 means\" section on stability, a Get started section, and What's next. Facts it can't know (install command, links, changes since beta, roadmap, the 1.0 commitments) are marked as HTML-comment TODOs, so they stay out of the rendered page and are easy to find. The front-matter date of 2026-10-20 is correct: today is Thursday 2026-10-15, so next Tuesday is the 20th.\n\nB has real flaws:\n- **Invented surname:** the byline \"[machine owner's real name]\" makes up a last name.\n- **Dedupe overclaim:** \"When five people photograph the same moment… Tidepool notices\" suggests it groups similar photos, which goes beyond deduplication. The forwarded and compressed copies in the hook make the same suggestion.\n- **Inconsistent voice:** it switches between \"I\" and \"us.\"\n- **Unverified claim:** it says beta testers answer questions on r/selfhosted, which nobody has confirmed.\n\nAll of these are quick fixes. A's problem is that the writing itself was never done.\n\nFor a request to write the post, B delivers a near-publishable draft with its unknowns honestly marked. A delivers a well-annotated outline and leaves the writing to the author. A senior writer would ship B after fixing the byline and tightening the dedupe wording; A would need to be written from scratch."
+      },
+      {
+        "lens": 3,
+        "winner": "with_skill",
+        "confidence": 0.7,
+        "reasoning": "Both repos start from the same five-line README. It says Tidepool is a self-hosted family photo library that runs on a Raspberry Pi or any small server, deduplicates photos from everyone's phones and recognizes faces locally (\"nothing leaves your house\"). It also says v1.0 ships next Tuesday after 18 months of nights and weekends, and that about 400 beta users came mostly from r/selfhosted. Neither result changed the README. Each added one Markdown file.\n\nResult A (blog/tidepool-v1.0-launch.md) states only what the README says. Every fact it lacks is marked with a specific TK note: the minimum Pi model and RAM, how near-duplicates are handled, how long the first face scan takes, the install command, the upgrade path, beta quotes and changelog items. The README says \"nothing leaves your house\" as plain fact, and A even softens that to \"the design goal\". It adds a TK asking for an audit of outbound connections (update checks, map tiles, model downloads) before publishing. That is the right instinct for a privacy claim in a launch post. Nothing in A needs re-checking. The weakness is that it is more a structured draft than a finished post: there is little prose and about a dozen TKs. But none of those TKs could slip through to publication unnoticed.\n\nResult B (launch-post.md) reads like a real post and is more nearly publishable. Some of its additions do check out. I confirmed the author \"[machine owner's real name]\" from the machine's git and account names, and the date 2026-10-20 really is the Tuesday after today (2026-10-15). It also marks the install command, links, changelog and roadmap with TODOs. It even flags its stability promises for confirmation, though it writes them out as if they were settled.\n\nBut B states several things the source does not support, and they are not flagged:\n- the source is on GitHub\n- the docs include a Raspberry Pi walkthrough\n- beta testers ran it on hardware the author never tested, imported bigger libraries, and filed the bugs that made it 1.0\n- beta testers answer support questions on r/selfhosted\n- no embedding is ever sent anywhere\n- you can \"point everyone's phones at it\", which assumes a sync mechanism\n- no GPU is needed\n- solo authorship (\"my\", \"I\")\n\nThe opening also implies that Tidepool collapses forwarded and re-compressed copies, a \"screenshot of a screenshot\". A correctly identified this as an open question. These are plausible-sounding details that would go out as false if the author skimmed the draft. Of the two, only B needs line-by-line fact-checking.\n\nOn a skeptic's standard, A is the result you can trust without re-checking. B gives more polish and voice, but at the cost of invented specifics."
+      }
+    ]
+  }
+]

@@ -1,0 +1,5 @@
+ src/checkout.js               | 18 ++++++++++++------
+ src/inventory.js              |  4 ++++
+ test/checkout.test.js         | 16 ++++++++++++++--
+ test/no-async-foreach.test.js | 24 ++++++++++++++++++++++++
+ 4 files changed, 54 insertions(+), 8 deletions(-)

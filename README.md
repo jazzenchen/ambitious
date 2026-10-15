@@ -105,9 +105,24 @@ It applies the essay's three directions:
 
 The never-grade-your-own-homework rule is the essay's. Several things are this skill's own: the guaranteed floor, the access audit, the cost line, the receipt, and saying so when a task doesn't deserve a climb.
 
-## Receipts
+## Does it actually help? With vs. without, measured
 
-4 small fixture tasks, same model (Opus), real headless runs, proposal phase only. `/ambitious` is compared with the same prompt plus *"Be more ambitious than I'm asking — propose the most ambitious version first, before doing any work."*
+Same 4 tasks, same model. Each was run once as you'd normally type it and once as `/ambitious --go <task>`. The finished work was then measured with hidden checks neither run saw, and compared by blind judges.
+
+| Task | Without the skill | With `/ambitious` |
+|---|---|---|
+| Fix a flaky test | Flake fixed, but **failed carts leak stock in 300/300 trials** | Flake fixed, **0/300** leaked, and a test that catches the leak |
+| Launch blog post | Polished, but **20 of 29 claims invented** | 1 unsupported claim. The gaps are marked `[TK]` instead of made up. |
+| CSV export button | Correct and injection-safe | Same quality, plus a tested module |
+| QBR deck section | 0 wrong numbers, with charts and polish | 0 wrong numbers, a figure-check script, no charts, `[TK]` owners |
+| Blind judges preferred | **7 of 12** | 5 of 12 |
+| Avg cost / time | $0.42 · 3 min | $1.06 · 7 min |
+
+In short, it's more correct and less polished. Where correctness was measurable (the code and the facts), `/ambitious` came out ahead. Where polish mattered (the deck and the post), the judges preferred plain Claude's finished look, flaws included. Use it when being wrong is expensive, and skip it for a quick draft. The full report, hidden tests and every output are in [`evals/outcomes/OUTCOMES.md`](evals/outcomes/OUTCOMES.md). Caveat: one run per arm, model judges, fixtures I wrote.
+
+### Proposal quality vs. telling Claude to "be more ambitious"
+
+Proposal phase only, before any work. `/ambitious` is compared with the same prompt plus *"Be more ambitious than I'm asking — propose the most ambitious version first, before doing any work."*
 
 | | `/ambitious` | "be more ambitious" |
 |---|---|---|
@@ -133,7 +148,10 @@ The full table, every output and every grade are in [`evals/results/BENCHMARK.md
 
 ## Cost, honestly
 
-On the four eval tasks (Opus), the card cost about $0.29 and took 1–4 minutes. Simply telling Claude "be more ambitious" cost about $0.17. The `--go` run above took about 4 minutes and $0.48. Most of the extra is the skill's own instructions in context plus a longer answer. It also reads your files before proposing anything. If your task is a rename, `/ambitious` will tell you not to bother.
+- **Finished work:** in the with/without benchmark, `/ambitious --go` averaged $1.06 and 7 minutes per task. Plain Claude averaged $0.42 and 3 minutes, so the skill costs about 2.5× more.
+- **Card only:** printing the card costs about $0.29.
+
+Most of the extra goes to the skill's instructions, writing the judge before the work and running it. If your task is a rename, `/ambitious` will tell you not to bother.
 
 ## Credit
 

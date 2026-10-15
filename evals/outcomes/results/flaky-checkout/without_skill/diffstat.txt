@@ -1,0 +1,3 @@
+ src/checkout.js       |  7 +++----
+ test/checkout.test.js | 16 +++++++++++++++-
+ 2 files changed, 18 insertions(+), 5 deletions(-)

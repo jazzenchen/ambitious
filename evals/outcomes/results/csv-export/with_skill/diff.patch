@@ -1,0 +1,152 @@
+diff --git a/src/Dashboard.tsx b/src/Dashboard.tsx
+index 625b177..d620a38 100644
+--- a/src/Dashboard.tsx
++++ b/src/Dashboard.tsx
+@@ -1,10 +1,24 @@
+ import { useOrders } from "./useOrders";
++import { toCsv, downloadCsv } from "./toCsv";
+ 
+ export function Dashboard() {
+   const { orders } = useOrders();
++  const exportCsv = () =>
++    downloadCsv(
++      "orders.csv",
++      toCsv(orders, [
++        { header: "ID", value: (o) => o.id },
++        { header: "Customer", value: (o) => o.customer },
++        { header: "Total", value: (o) => o.total },
++        { header: "Status", value: (o) => o.status },
++      ]),
++    );
+   return (
+     <section>
+       <h1>Orders</h1>
++      <button type="button" onClick={exportCsv} disabled={orders.length === 0}>
++        Download CSV
++      </button>
+       <table>
+         <thead><tr><th>ID</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>
+         <tbody>
+diff --git a/src/toCsv.test.ts b/src/toCsv.test.ts
+new file mode 100644
+index 0000000..8aa08e8
+--- /dev/null
++++ b/src/toCsv.test.ts
+@@ -0,0 +1,82 @@
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { toCsv, type Column } from "./toCsv.ts";
++
++type Row = { id: string | number; customer: string; total: number | string; status: string };
++
++const columns: Column<Row>[] = [
++  { header: "ID", value: (o) => o.id },
++  { header: "Customer", value: (o) => o.customer },
++  { header: "Total", value: (o) => o.total },
++  { header: "Status", value: (o) => o.status },
++];
++
++const hostile: Row[] = [
++  { id: 1, customer: "Acme, Inc.", total: 120.5, status: "paid" },
++  { id: 2, customer: 'The "Best" Shop', total: 9.99, status: "paid" },
++  { id: 3, customer: "Line\nBreak Ltd", total: 10, status: "pending" },
++  { id: 4, customer: "Carriage\r\nReturn Co", total: 11, status: "pending" },
++  { id: 5, customer: "=HYPERLINK(\"http://x\",\"y\")", total: 1, status: "paid" },
++  { id: 6, customer: "+SUM(A1:A9)", total: 2, status: "paid" },
++  { id: 7, customer: "-2+3", total: 3, status: "refunded" },
++  { id: 8, customer: "@cmd", total: 4, status: "paid" },
++  { id: 9, customer: "\tTabbed", total: 5, status: "paid" },
++  { id: 10, customer: "Zoë Müller 東京", total: -12.5, status: "refunded" },
++  { id: 11, customer: "", total: 0, status: "" },
++  { id: 12, customer: "  padded , \"mixed\"\n=all ", total: 1e21, status: "paid" },
++];
++
++// Minimal RFC 4180 parser, independent of the implementation under test.
++function parse(csv: string): string[][] {
++  const rows: string[][] = [];
++  let row: string[] = [];
++  let cell = "";
++  let i = 0;
++  let quoted = false;
++  while (i < csv.length) {
++    const c = csv[i];
++    if (quoted) {
++      if (c === '"' && csv[i + 1] === '"') { cell += '"'; i += 2; continue; }
++      if (c === '"') { quoted = false; i++; continue; }
++      cell += c; i++; continue;
++    }
++    if (c === '"' && cell === "") { quoted = true; i++; continue; }
++    if (c === ",") { row.push(cell); cell = ""; i++; continue; }
++    if (c === "\r" && csv[i + 1] === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; i += 2; continue; }
++    if (c === "\n" || c === "\r") throw new Error(`bare line break outside quotes at ${i}`);
++    cell += c; i++;
++  }
++  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
++  return rows;
++}
++
++const FORMULA = /^[=+\-@\t\r]/;
++const expected = (v: unknown) =>
++  typeof v === "string" && FORMULA.test(v) ? `'${v}` : String(v);
++
++test("starts with a UTF-8 BOM and uses CRLF", () => {
++  const csv = toCsv(hostile, columns);
++  assert.equal(csv.charCodeAt(0), 0xfeff);
++  assert.ok(csv.endsWith("\r\n"));
++});
++
++test("12 hostile rows round-trip with 0 altered cells", () => {
++  const parsed = parse(toCsv(hostile, columns).replace(/^﻿/, ""));
++  assert.deepEqual(parsed[0], ["ID", "Customer", "Total", "Status"]);
++  assert.equal(parsed.length, hostile.length + 1);
++  const altered: string[] = [];
++  hostile.forEach((r, i) => {
++    columns.forEach((col, j) => {
++      const want = expected(col.value(r));
++      const got = parsed[i + 1]?.[j];
++      if (got !== want) altered.push(`row ${r.id} ${col.header}: ${JSON.stringify(got)} != ${JSON.stringify(want)}`);
++    });
++  });
++  assert.deepEqual(altered, [], `${altered.length} altered cells`);
++});
++
++test("no string cell starts with a formula trigger; numbers stay numeric", () => {
++  const parsed = parse(toCsv(hostile, columns).replace(/^﻿/, ""));
++  for (const row of parsed.slice(1)) assert.ok(!FORMULA.test(row[1]), row[1]);
++  assert.equal(parsed[10][2], "-12.5");
++});
+diff --git a/src/toCsv.ts b/src/toCsv.ts
+new file mode 100644
+index 0000000..084a1a4
+--- /dev/null
++++ b/src/toCsv.ts
+@@ -0,0 +1,29 @@
++export type Column<T> = { header: string; value: (row: T) => unknown };
++
++// Spreadsheet apps execute cells starting with these as formulas (OWASP CSV injection).
++const FORMULA_TRIGGER = /^[=+\-@\t\r]/;
++
++function cell(value: unknown): string {
++  let s = value == null ? "" : String(value);
++  // Numbers pass through so negative totals stay numeric.
++  if (typeof value === "string" && FORMULA_TRIGGER.test(s)) s = `'${s}`;
++  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
++}
++
++// RFC 4180 CSV with a UTF-8 BOM so Excel decodes non-ASCII names correctly.
++export function toCsv<T>(rows: T[], columns: Column<T>[]): string {
++  const lines = [
++    columns.map((c) => cell(c.header)),
++    ...rows.map((r) => columns.map((c) => cell(c.value(r)))),
++  ];
++  return "﻿" + lines.map((l) => l.join(",") + "\r\n").join("");
++}
++
++export function downloadCsv(filename: string, csv: string): void {
++  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
++  const a = document.createElement("a");
++  a.href = url;
++  a.download = filename;
++  a.click();
++  URL.revokeObjectURL(url);
++}

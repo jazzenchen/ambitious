@@ -1,0 +1,6 @@
+ deck/customer_section.md         | 143 +++++++++++++++++++++++++++++++++++++++
+ deck/customer_section.pptx       | Bin 0 -> 43264 bytes
+ deck/customer_section_floor.md   |  75 ++++++++++++++++++++
+ deck/customer_section_floor.pptx | Bin 0 -> 37142 bytes
+ deck/verify_deck.py              | 129 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 347 insertions(+)

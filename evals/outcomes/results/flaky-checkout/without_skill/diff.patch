@@ -1,0 +1,44 @@
+diff --git a/src/checkout.js b/src/checkout.js
+index 61f7205..df68268 100644
+--- a/src/checkout.js
++++ b/src/checkout.js
+@@ -1,10 +1,9 @@
+ import { reserve } from "./inventory.js";
+ 
+ export async function checkout(cart) {
+-  const reservations = [];
+   // Reserve every line item in parallel to keep checkout fast.
+-  cart.items.forEach(async (item) => {
+-    reservations.push(await reserve(item.sku, item.qty));
+-  });
++  const reservations = await Promise.all(
++    cart.items.map((item) => reserve(item.sku, item.qty))
++  );
+   return { orderId: `ord_${cart.id}`, reservations };
+ }
+diff --git a/test/checkout.test.js b/test/checkout.test.js
+index 014000e..abc1a13 100644
+--- a/test/checkout.test.js
++++ b/test/checkout.test.js
+@@ -7,6 +7,20 @@ beforeEach(() => _reset());
+ 
+ test("checkout reserves every item", async () => {
+   const order = await checkout({ id: 1, items: [{ sku: "sku-red-mug", qty: 1 }] });
+-  await new Promise((r) => setTimeout(r, 25)); // give reservations time to land
+   assert.equal(order.reservations.length, 1);
+ });
++
++test("checkout reserves multiple items", async () => {
++  const order = await checkout({
++    id: 2,
++    items: [{ sku: "sku-red-mug", qty: 1 }, { sku: "sku-red-mug", qty: 2 }],
++  });
++  assert.equal(order.reservations.length, 2);
++});
++
++test("checkout rejects when an item is out of stock", async () => {
++  await assert.rejects(
++    checkout({ id: 3, items: [{ sku: "sku-blue-mug", qty: 1 }] }),
++    /out of stock: sku-blue-mug/
++  );
++});
