@@ -1,0 +1,46 @@
+# Tidepool v1.0: your family's photos, on a box in your house
+
+How many phones photographed your family's last birthday party, and how many
+accounts are those photos in now?
+
+[TK: one screenshot of the library view]
+
+Tidepool is a self-hosted photo library for families. It runs on a Raspberry Pi
+or any small server, deduplicates photos from everyone's phones, and recognizes
+faces locally. Today it hits v1.0. [TK: exact release date]
+
+[TK: install command and link to repo/docs — put the one thing to click here]
+
+## What it does
+
+- **Runs on a Raspberry Pi or any small server.**
+  [TK: minimum tested Pi model, RAM, and storage]
+- **Deduplicates photos from everyone's phones.**
+  [TK: what happens to duplicates — merged, hidden, or deleted? Are originals
+  kept? Exact copies only, or also resized and
+  re-compressed ones, like a photo forwarded through a chat app?]
+- **Recognizes faces locally.** Face recognition runs on your box.
+  [TK: how long a first face scan takes on a Pi, measured on a real library —
+  library size, Pi model, SD card or SSD]
+
+## What stays in your house
+
+The design goal is that nothing leaves your house.
+[TK: before publishing, audit and list every outbound connection — update
+checks, map tiles, model downloads — and say here which exist and how to turn
+each off. If any exist, reword the line above.]
+
+## Your photos are yours to take with you
+
+[TK: where originals live on disk, how to back up the library, and how to
+export everything if you ever stop using Tidepool]
+
+## How we got here
+
+Tidepool took 18 months of nights and weekends. About 400 people ran the beta,
+most of whom found it on r/selfhosted.
+[TK: what changed between the beta and v1.0, from the changelog]
+
+[TK: one or two beta users' own words, with permission]
+
+If you ran the beta: thank you. [TK: upgrade path from beta to v1.0]

@@ -1,0 +1,59 @@
+---
+title: "Tidepool 1.0: your family's photos, in your house"
+date: 2026-10-20
+author: [the machine owner's real name]
+---
+
+# Tidepool 1.0: your family's photos, in your house
+
+Somewhere in your family there's a photo of a birthday cake. Actually, there are probably eleven: one from each phone that was in the room, a couple more forwarded through the group chat, and one compressed screenshot of a screenshot. They're split across four cloud accounts, and nobody can find the good one.
+
+Tidepool is my attempt to fix that without handing the whole family album to someone else's servers. Today, after 18 months of nights and weekends, it's 1.0.
+
+## What Tidepool is
+
+Tidepool is a self-hosted photo library built for families. You run it on a Raspberry Pi or any small server you already have, point everyone's phones at it, and it becomes the one place your family's photos live.
+
+It does three things well:
+
+- **It runs on small hardware.** A Raspberry Pi is enough. You don't need a rack, a GPU, or a monthly bill.
+- **It deduplicates.** When five people photograph the same moment, or the same picture comes in from three phones, Tidepool notices and keeps one library instead of five piles.
+- **It recognizes faces locally.** Face recognition runs on your own machine. No photo, face, or embedding is sent anywhere. Nothing leaves your house.
+
+That last point is the reason Tidepool exists. Family photos are some of the most personal data we have. Kids grow up in them. I wanted the convenience of "show me every photo of Grandma" without needing to trust a company's privacy policy to get it.
+
+## Built with the beta crowd
+
+Tidepool spent its beta in the hands of about 400 people, most of whom found it through r/selfhosted. They ran it on hardware I'd never have tested, imported libraries far bigger than mine, and filed the bug reports that turned a side project into something I'm comfortable calling 1.0.
+
+If you were one of them: thank you. This release is yours as much as mine.
+
+<!-- TODO: add 2–4 specific things that changed since beta, ideally ones beta users asked for -->
+
+## What 1.0 means
+
+1.0 is a promise about stability, not a claim that it's finished. Concretely:
+
+<!-- TODO: confirm these match your actual commitments before publishing -->
+- Your library is safe to upgrade. Future versions will migrate your data instead of asking you to re-import.
+- The setup you do today is the setup you'll keep.
+- Breaking changes, if any, will be clearly documented ahead of time.
+
+## Get started
+
+<!-- TODO: replace with the real install command / docs link -->
+```sh
+# install instructions here
+```
+
+Full setup instructions, including a Raspberry Pi walkthrough, are in the [docs](TODO-link). The source is on [GitHub](TODO-link).
+
+If you run into trouble, open an issue or come find us on r/selfhosted. Many of the people answering there were beta testers, and they know Tidepool better than almost anyone.
+
+## What's next
+
+<!-- TODO: 1–3 roadmap items, or cut this section -->
+
+For now, I'm going to enjoy shipping something. Then I'm going to go find the good photo of that birthday cake.
+
+— [owner's first name]

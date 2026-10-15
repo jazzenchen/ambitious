@@ -10,6 +10,6 @@ I wrote the launch post and saved it as `launch-post.md` in the project root. It
 
 **Assumptions to check:**
 - I set the publish date to **2026-10-20**, which is next Tuesday, the ship date in the README.
-- The front matter lists you as the author, and the post is first person, signed "— Jazzen."
+- The front matter lists you as the author, and the post is first person, signed "— [owner's first name]."
 
 I can also write a shorter version for r/selfhosted, since that's where most of your users came from.

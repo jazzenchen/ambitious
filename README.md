@@ -60,6 +60,10 @@ The test wasn't flaky; the code was, and the same bug let sold-out items be orde
 
 **Checked without a model:** [`evals/verify_go_run.sh`](evals/verify_go_run.sh) rebuilds the fix from the shipped diff. [Its log](evals/results/go-run/recheck.log): the original suite fails about 1 run in 3, and the fixed suite failed 0 of 300 runs. The 4 tests (3 new, 1 rewritten) fail on the old `checkout.js` and pass on the fix. The run's raw transcript, stress script and diff are in [`evals/results/go-run/`](evals/results/go-run/).
 
+**New here?**
+- [How it works](docs/HOW-IT-WORKS.md) walks through every line of the card.
+- [Examples](examples/) shows the same four requests with and without `/ambitious`: the exact prompts, the real outputs, and what hidden checks and blind judges found.
+
 ## Install
 
 ```bash
@@ -117,6 +121,8 @@ Same 4 tasks, same model. Each was run once as you'd normally type it and once a
 | QBR deck section | 0 wrong numbers, with charts and polish | 0 wrong numbers, a figure-check script, no charts, `[TK]` owners |
 | Blind judges preferred | **7 of 12** | 5 of 12 |
 | Avg cost / time | $0.42 · 3 min | $1.06 · 7 min |
+
+Every prompt and result is published, with a plain-English explanation: [examples/](examples/).
 
 In short, it's more correct and less polished. Where correctness was measurable (the code and the facts), `/ambitious` came out ahead. Where polish mattered (the deck and the post), the judges preferred plain Claude's finished look, flaws included. Use it when being wrong is expensive, and skip it for a quick draft. The full report, hidden tests and every output are in [`evals/outcomes/OUTCOMES.md`](evals/outcomes/OUTCOMES.md). Caveat: one run per arm, model judges, fixtures I wrote.
 

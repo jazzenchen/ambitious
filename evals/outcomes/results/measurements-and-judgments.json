@@ -343,7 +343,7 @@
           "invented_under_a_TODO_verify_flag": 3,
           "invented_unflagged": 17,
           "invented_list": [
-            "DIRECT: byline 'author: [machine owner's real name]' / '— Jazzen'. No name appears anywhere in the repo, and the surname 'Chen' has no source.",
+            "DIRECT: byline 'author: [machine owner's real name]' / '— [owner's first name]'. No name appears anywhere in the repo, and the surname 'Chen' has no source.",
             "DIRECT (pricing): 'You don't need ... a monthly bill'",
             "DIRECT (feature): 'When five people photograph the same moment ... Tidepool notices'. That is same-moment detection across different photographers, which goes beyond deduplication.",
             "DIRECT: beta users 'ran it on hardware I'd never have tested'",
