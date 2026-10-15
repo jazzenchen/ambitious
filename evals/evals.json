@@ -1,0 +1,92 @@
+{
+  "skill_name": "ambitious",
+  "baseline_note": "Baseline = same task with the generic advice appended instead of the skill: 'Be more ambitious than I'm asking \u2014 propose the most ambitious version first, before doing any work.' This tests whether the skill beats simply telling Claude to be ambitious.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "flaky-checkout",
+      "fixture": "fixtures/flaky-checkout",
+      "task": "fix the flaky checkout test",
+      "expected_output": "An ambition ladder that climbs from 'make the test pass' to keeping checkout/CI reliable for good, finds the real bug (forEach(async) not awaited) rather than tuning the sleep, sets a hard measurable target (e.g. 0 failures in N repeated runs), names an outside judge the model can run (repeated test runs / stress loop), and lists any access it would need.",
+      "files": [],
+      "expectations": [
+        "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+        "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+        "Hard target: states at least one specific numeric target that goes beyond the stated need",
+        "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+        "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+        "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+        "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+        "Stops before doing the work and offers the user a clear choice of how far to go",
+        "Root cause: identifies that checkout() pushes from async forEach callbacks it never awaits (so the order returns before reservations land), rather than proposing a longer sleep or retries"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "acme-qbr",
+      "fixture": "fixtures/acme-qbr",
+      "task": "make the customer section of our Q3 QBR deck",
+      "expected_output": "Climbs from 'slides of charts' to the decisions execs need to make; actually reads the CSV and challenges the 'SMB is fine' assumption (SMB churn and response times are rising while logos grow); proposes real instruments (cohort/churn analysis, not markdown tables); proposes cross-field methods without role-play; names a validation step.",
+      "files": [],
+      "expectations": [
+        "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+        "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+        "Hard target: states at least one specific numeric target that goes beyond the stated need",
+        "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+        "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+        "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+        "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+        "Stops before doing the work and offers the user a clear choice of how far to go",
+        "Data insight: computes from q3_metrics.csv that SMB churn and/or first-response time are worsening and uses it to challenge 'SMB is fine'"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "tidepool-launch-post",
+      "fixture": "fixtures/launch-post",
+      "task": "write the launch blog post for Tidepool v1.0",
+      "expected_output": "Recognizes this is creative work where pure 'altitude' fits less, leans on depth and range (e.g. what the best launch writers/editors do, testing the headline with outside readers, borrowing from other fields), keeps the original deliverable as the floor, and stays concrete to Tidepool's facts.",
+      "files": [],
+      "expectations": [
+        "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+        "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+        "Hard target: states at least one specific numeric target that goes beyond the stated need",
+        "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+        "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+        "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+        "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+        "Stops before doing the work and offers the user a clear choice of how far to go",
+        "Creative fit: treats this as creative work (does not force outcome metrics where they don't fit) and stays strictly factual to the README \u2014 no invented features, numbers or quotes"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "csv-export",
+      "fixture": "fixtures/csv-export",
+      "task": "add a CSV export button to the orders dashboard",
+      "expected_output": "Uses FEEDBACK.md to find the goal beyond the goal (accountant reporting, Stripe reconciliation, weekly ops sheet) and proposes a more ambitious version (e.g. scheduled exports / reconciliation / live sheet sync) while keeping the button as the guaranteed floor; sets measurable success (ticket volume), and an outside judge.",
+      "files": [],
+      "expectations": [
+        "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+        "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+        "Hard target: states at least one specific numeric target that goes beyond the stated need",
+        "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+        "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+        "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+        "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+        "Stops before doing the work and offers the user a clear choice of how far to go",
+        "Goal behind the goal: connects the button to the weekly workflows in FEEDBACK.md (accountant, Stripe reconciliation, Sheets rebuild)"
+      ]
+    }
+  ],
+  "general_assertions": [
+    "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+    "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+    "Hard target: states at least one specific numeric target that goes beyond the stated need",
+    "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+    "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+    "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+    "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+    "Stops before doing the work and offers the user a clear choice of how far to go"
+  ]
+}

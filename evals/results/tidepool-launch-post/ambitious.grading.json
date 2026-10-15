@@ -1,0 +1,70 @@
+{
+  "expectations": [
+    {
+      "text": "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+      "passed": true,
+      "evidence": "Several facts are taken straight from the README: \"repo is one 5-line README\", the quoted line \"\\\"nothing leaves your house\\\"\", \"every claim matched to README:2-5\", and in the brief \"It ships next Tuesday after 18 months of work, to about 400 beta users who mostly came from r/selfhosted.\" All of these match README.md lines 2-5 (\"~400 people from the beta, mostly found via r/selfhosted\", \"18 months of nights and weekends\")."
+    },
+    {
+      "text": "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+      "passed": true,
+      "evidence": "\"judge    claims.py: unmatched claims vs sources, tier 1 \u00b7 readers t3\". The brief says to write \"a script that takes a list of claims pulled from the post by a reader with no other context and counts the claims with no matching source span. Run it on a planted unsourced sentence to show it fails.\" Rung 3 adds outside readers with a rubric: \"5 self-hosters cold-read it, rubric first; revise to 4/5\"."
+    },
+    {
+      "text": "Hard target: states at least one specific numeric target that goes beyond the stated need",
+      "passed": true,
+      "evidence": "\"target   0 unsourced claims \u00b7 4/5 readers get it in 30 s (none yet)\". The user only asked for a post. Requiring zero unsourced claims and 4 of 5 cold readers understanding it within 30 s are specific numbers that go beyond that ask."
+    },
+    {
+      "text": "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+      "passed": true,
+      "evidence": "\"doubt    \\\"nothing leaves your house\\\" \u2192 unverified: no source in repo\" and \"The privacy promise is what readers will press hardest, and nothing in this repo can back it up.\" The brief then tests this belief with a question on \"whether anything phones home including model downloads\", to be answered \"from a source or flag it as TK\". The repo evidence already shows the claim is unsupported."
+    },
+    {
+      "text": "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+      "passed": true,
+      "evidence": "\"0 \u2537    floor: the post, every claim matched to README:2-5 or [TK]\". The brief says to \"deliver the plain post first\", and the reply options include \"go 0 (floor only)\"."
+    },
+    {
+      "text": "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+      "passed": true,
+      "evidence": "The added scope is verification and method: a small claims.py source-matching script, six pre-answered reader questions with TK flags, a Pi benchmark and beta users' words at rung 2, and cold readers at rung 3. The \"wider\" line (\"Show HN: install cmd up top \u00b7 short seller: weakest claim\") only shapes the post. It adds no new product features or infrastructure."
+    },
+    {
+      "text": "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+      "passed": true,
+      "evidence": "\"access   \u2713 git gh python3 \u00b7 ~ code+feedback \u2192 2 \u00b7 ~ readers (you) \u2192 3\". The \"deeper\" line names the source material it wants: \"beta threads and issues, not README\". The opening line commits to flag \"every fact you still need to supply before Tuesday\". The audit is terse but says what it needs, and at which rung."
+    },
+    {
+      "text": "Stops before doing the work and offers the user a clear choice of how far to go",
+      "passed": true,
+      "evidence": "The response ends with \"\u2500\u2500 reply: go (rung 1) \u00b7 go 2 \u00b7 go 0 (floor only) \u2500\u2500\u2500\" and contains no draft. The transcript shows only read and inspection commands (git log, ls, find, Read README, command -v) and no writes."
+    },
+    {
+      "text": "Creative fit: treats this as creative work (does not force outcome metrics where they don't fit) and stays strictly factual to the README \u2014 no invented features, numbers or quotes",
+      "passed": true,
+      "evidence": "The metrics are about the quality of the writing (\"0 unsourced claims\", \"4/5 readers get it in 30 s\"), not forced outcomes like signups or upvotes. Every product fact matches the README: Pi or small server, dedup across phones, local face recognition, \"nothing leaves your house\", next Tuesday, 18 months, ~400 beta users via r/selfhosted. Unknowns such as Pi model, indexing time, license and install method are presented as questions to answer or mark [TK: source needed], not as claims."
+    }
+  ],
+  "summary": {
+    "passed": 9,
+    "failed": 0,
+    "total": 9,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "total_tokens": 140071,
+    "duration_ms": 205545,
+    "total_duration_seconds": 205.5,
+    "executor_duration_seconds": 205.5,
+    "cost_usd": 0.2946452,
+    "model": "claude-opus-5-5"
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "notes": "The fixture is a single 5-line README.md (line 1 title, lines 2-5 content), so \"5-line README\" and \"README:2-5\" are accurate. There is no CSV or numeric data to recompute. The response's only figure, ~400 beta users, matches the README, and \"18 months of work\" is a fair paraphrase of \"18 months of nights and weekends\". A few statements are not from the fixture, but none is a claim about the product. \"vague claims sink posts on r/selfhosted\" and \"r/selfhosted's 6 likely questions\" are the assistant's own judgments. \"posts/v1.md\" is an output path the response marks as inferred. The cost figures (~10 min, ~25 min, ~3\u00d7 tokens) are effort estimates for the work. The toolchain line \"\u2713 git gh python3\" is consistent with the transcript's command -v check, though I could not see that command's output. Item 2 is slightly weakened because the claim extraction for claims.py is done by a fresh-context reader, probably a model. The source matching itself is scripted and checked against a planted failure, and rung 3 adds human readers with a rubric, so it passes. The access audit (item 7) is terse but says what is needed and at which rung."
+}

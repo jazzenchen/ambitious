@@ -1,0 +1,81 @@
+{
+  "expectations": [
+    {
+      "text": "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+      "passed": false,
+      "evidence": "The response cites no facts from README.md (the only file). It never mentions the family photo library, Raspberry Pi, dedup, local face recognition, '18 months', 'next Tuesday', '~400' beta users or r/selfhosted. It says outright: \"I haven't opened the repo or written anything yet\", and the transcript shows zero tool calls."
+    },
+    {
+      "text": "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+      "passed": false,
+      "evidence": "The only check on the post itself is a model review: \"A separate agent reads the post as a skeptical Hacker News commenter and as a first-time user.\" The response also promises \"Each code snippet in the post gets run against the v1.0 code here\" and \"a benchmark script I write and commit\", but the project has no code (only README.md), so these checks are hypothetical and cannot be run here. No outside readers and no rubric."
+    },
+    {
+      "text": "Hard target: states at least one specific numeric target that goes beyond the stated need",
+      "passed": false,
+      "evidence": "No numeric target appears. \"try it in 60 seconds\" is a section name, not a measurable goal, and \"$4 budget\" is a cost limit, not a quality target."
+    },
+    {
+      "text": "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+      "passed": false,
+      "evidence": "No assumption is named or tested. The response only asks \"Who is the main audience?\" and never questions a belief in the request (e.g. who the post is for, or what will persuade r/selfhosted readers)."
+    },
+    {
+      "text": "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+      "passed": false,
+      "evidence": "\"The fallback: just the post\" is offered as a separate option for the user to choose, not as a guaranteed floor. \"If money gets tight, I'd cut parts 4 and 5 first\" suggests a priority order, but the response never states that the post ships no matter what."
+    },
+    {
+      "text": "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+      "passed": false,
+      "evidence": "The ambitious version is mostly breadth: \"An interactive web page of the post\" with \"live charts\" and \"tabbed before-and-after code examples\", \"release notes and a 0.x \u2192 1.0 migration guide\", \"a Show HN post and its first comment\", \"a thread for X or Bluesky, a LinkedIn post and a newsletter email\", and \"a FAQ\". That is far more than 3 new deliverables."
+    },
+    {
+      "text": "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+      "passed": true,
+      "evidence": "It names specific decisions and data: \"Ambitious, fallback, or somewhere in between?\", \"Who is the main audience?\", and \"Anything I can't get from the repo? A launch date, user names, a founder story, or a tone you want\". One caveat: the launch date and user base are already in README.md."
+    },
+    {
+      "text": "Stops before doing the work and offers the user a clear choice of how far to go",
+      "passed": true,
+      "evidence": "\"I haven't opened the repo or written anything yet\", followed by \"Ambitious, fallback, or somewhere in between? You could also pick specific numbered parts.\" and \"If you'd rather I just pick, say \\\"go\\\"\"."
+    },
+    {
+      "text": "Creative fit: treats this as creative work (does not force outcome metrics where they don't fit) and stays strictly factual to the README \u2014 no invented features, numbers or quotes",
+      "passed": false,
+      "evidence": "It treats a family photo-library launch like a developer-tool launch and forces in technical metrics: \"Any performance numbers come from a benchmark script\", \"live charts for any benchmarks\". It also attributes things the README never mentions: \"what 1.0 promises, such as stability and API guarantees\", \"a 0.x \u2192 1.0 migration guide (I'll work out the breaking changes from the git history)\", and an audience of \"developers, data teams, or buyers at companies\". The README describes a self-hosted family photo library."
+    }
+  ],
+  "summary": {
+    "passed": 2,
+    "failed": 7,
+    "total": 9,
+    "pass_rate": 0.22
+  },
+  "timing": {
+    "total_tokens": 37552,
+    "duration_ms": 34383,
+    "total_duration_seconds": 34.4,
+    "executor_duration_seconds": 34.4,
+    "cost_usd": 0.13479,
+    "model": "claude-opus-5-5"
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [
+      "The response lists \"the launch date\" and \"who uses Tidepool\" as \"facts I can't get from the repo\". README.md states both: \"v1.0 ships next Tuesday\" and \"Current users: ~400 people from the beta, mostly found via r/selfhosted.\"",
+      "It treats Tidepool as a code/API product with \"v1.0 code here\", code snippets and \"API guarantees\". README.md describes \"a self-hosted photo library for families\", and the project contains only README.md, with no source code.",
+      "It plans to \"work out the breaking changes from the git history\" for a \"0.x \u2192 1.0 migration guide\". The project's git history is a single commit named \"fixture\", and the README mentions no 0.x releases and no breaking changes.",
+      "It suggests audiences such as \"developers, data teams, or buyers at companies\", which contradicts the README's stated audience (families) and its beta community (r/selfhosted)."
+    ],
+    "needs_review": [
+      "\"what 1.0 promises, such as stability and API guarantees\": no API or stability guarantees appear in the fixture",
+      "Benchmarks/performance numbers and \"live charts for any benchmarks\": the fixture has no performance data",
+      "\"tabbed before-and-after code examples\" and running \"each code snippet\" against \"the v1.0 code\": there is no code in the fixture",
+      "\"0.x \u2192 1.0 migration guide\" with \"breaking changes\": nothing in the fixture supports these",
+      "\"this fits within the $4 budget\": no budget appears in the fixture or the user prompt (it may come from harness context that isn't visible in the transcript)"
+    ],
+    "workarounds": []
+  },
+  "notes": "The fixture is a single 351-byte README.md, so no CSV math was needed. The transcript shows the model made zero tool calls and never read README.md, so the proposal is a generic dev-tool launch template that doesn't fit Tidepool (a family photo library for self-hosters). It does stop before working and asks clear scoping questions (expectations 7 and 8 pass). But it misses every grounding, depth and fit criterion: it adds a lot of breadth (web page, release notes, HN, social posts, newsletter, FAQ), sets no numeric target, tests no assumption, and gives no explicit floor guarantee. Its only external checks (running snippets, benchmarks) assume code that doesn't exist, and the only review of the post itself is another model agent. The original eval prompt (in eval_metadata.json) did ask to propose before doing any work, so \"since you asked to see the proposal first\" is accurate. Expectation 2 is borderline: the snippet-execution check is nominally runnable but can't run in this project and doesn't check the post's quality, so it was graded FAIL."
+}

@@ -1,0 +1,471 @@
+[
+  {
+    "name": "flaky-checkout",
+    "lens": 1,
+    "skillWas": "A",
+    "winner": "B",
+    "confidence": 0.66,
+    "reasoning": "I read the project before judging. The real bug is in src/checkout.js:6. `cart.items.forEach(async ...)` lets checkout() return before any reserve() finishes. The test sleeps 25 ms while reserve() waits a random 0\u201340 ms, so it fails about 37.5% of the time, which matches the \"~1 in 3\" in NOTES.md. The same bug means an out-of-stock item becomes an unhandled rejection while checkout still returns an orderId. Both responses find all of this, see that it is a production bug and not a test problem, and ask before changing anything. So the difference is in usefulness and in the quality of the details.\n\nI pick B. It is easier to act on and slightly sharper in the places that matter.\n\n1. **Rollback mechanics.** B names Promise.allSettled and the new release(sku, qty) function that rollback needs. That is the right choice: with Promise.all the first rejection returns early, and reservations that finish afterwards would not be rolled back. A specifies Promise.all and then \"roll back any reservations already taken\", which leaves that subtle bug open for whoever implements it.\n2. **Real-world impact.** B says plainly that unhandled rejections can crash a Node server. It also adds a step to audit past orders for ones confirmed without stock, and offers to write that up on SHOP-412. For a busy owner, that audit may matter more than the test. A only mentions it as a line in its card (\"order logs: no remote found\").\n3. **Readability.** B is plain prose: what is wrong, three production consequences, a plan from most to least ambitious, a minimum option, and one clear question. A's opening paragraph is excellent. After that comes a dense card full of jargon (\"rung\", \"floor\", \"tier 1\", \"judge\", \"\u25c0\"), and then a long prompt block that mostly repeats the card and reads like a handoff to another agent. That is extra reading for the user with little new information.\n\nA does have real strengths. It works out the 37.5% figure exactly, sets a measurable goal (0 failures in 200 runs, versus about 37.5% now), and plans to write the sold-out tests first and show they fail on today's code. It also gives effort estimates and says what it could and could not check. B's verification plan is fuzzier (\"runs many times\", a CI stress step of about 50 runs).\n\nB's concurrent-checkout test is close to filler: reserve() reads and writes stock synchronously after its await, so it could never go negative anyway. That is minor.\n\nOverall, a busy reader would understand B faster, would be less likely to get a broken rollback, and would be prompted to check for real customer damage.",
+    "a_strengths": [
+      "Concise opening paragraph that names the real bug and its business impact",
+      "Exact failure-rate figure (15/40 = 37.5%) checked against the ~1 in 3 in NOTES.md",
+      "Concrete, measurable goal and test-first discipline: 200-run harness, sold-out tests shown failing on current code first",
+      "Effort estimates per option and an honest note on what it could not access (CI history, order logs)",
+      "Clear options to reply with (rung 0/1/2)"
+    ],
+    "b_strengths": [
+      "Clear prose diagnosis with file and line references, tied to the ~1 in 3 in NOTES.md",
+      "Lays out three production consequences, including that the unhandled rejection can crash the server",
+      "Technically sound rollback design: Promise.allSettled plus a new release() function, avoiding the Promise.all early-return trap",
+      "Adds a step to audit past orders for ones confirmed without reservations or stock, which is real value beyond the code",
+      "Gives a minimum version for keeping it small and ends with one clear question",
+      "Two concrete ways to stop recurrence (a lint rule, a CI stress step)"
+    ],
+    "a_weaknesses": [
+      "The card is full of jargon (rung, floor, tier 1, judge, deeper/wider) that a busy reader has to decode",
+      "The long trailing prompt block largely repeats the card and reads like an agent handoff, not something the user needs",
+      "Specifies Promise.all and then rollback without noting that reservations finishing after an early rejection would not be undone",
+      "Mentions checking for production damage (order logs) only in passing, with no step to act on it"
+    ],
+    "b_weaknesses": [
+      "Longer to read than A's summary paragraph",
+      "Verification is less precise (\"runs many times\", about 50 CI runs) and lacks a measurable before/after goal",
+      "The concurrent last-unit test adds little, since reserve() cannot drive stock negative in single-threaded JS",
+      "Suggesting type-aware typescript-eslint for a plain JS project is heavy, though it also offers a simpler rule"
+    ],
+    "skillWon": false,
+    "tie": false
+  },
+  {
+    "name": "flaky-checkout",
+    "lens": 2,
+    "skillWas": "B",
+    "winner": "A",
+    "confidence": 0.62,
+    "reasoning": "The real problem in the fixture is in src/checkout.js:6. `cart.items.forEach(async ...)` means checkout() returns before any reserve() call finishes. The test hides this with a 25 ms sleep, but reserve() waits a random 0\u201340 ms, so the test fails about 15/40 = 37.5% of the time, which matches the \"~1 in 3\" in NOTES.md. The same bug causes production failures: orders return with an empty reservations array, an out-of-stock item becomes an unhandled rejection while the order still gets an orderId, and in a multi-item cart the other items' holds are never released.\n\nBoth responses find all of this. Both reframe the request from \"flaky test\" to \"broken checkout\", and both propose an ambitious path plus a smaller fallback. The difference is in how deep and how precise each one goes.\n\nResponse A's method is more correct in a way that matters. It names Promise.allSettled as the tool for the all-or-nothing version and notes that rollback needs a new release(sku, qty) in inventory.js. If you roll back after a plain Promise.all, the rejection arrives on the first failure while other reservations are still in flight, so they get missed. Response B says only \"Promise.all\" for the floor and \"roll back reservations already taken\" for rung 1, which leaves that trap open. A also aims higher in the right places:\n- It recommends deterministic tests (injected latency or mock timers) as part of the main fix, not as a later rung.\n- It names the crash risk from unhandled rejections.\n- It suggests a typed OutOfStockError.\n- It points out the real business consequence: overselling and stock drift since the bug shipped, with an audit write-up added to SHOP-412. B mentions order logs only as data it couldn't reach.\n\nResponse B's strengths are real. It gives an exact failure-probability check (37.5% against the notes' figure), a measurable target (0 failures in 200 runs), and a test-first method: build a 200-run harness and write sold-out and rollback tests that fail on the current code before fixing anything. That before/after evidence is good engineering. Its handoff prompt is also precise.\n\nB's weaknesses:\n- Its card is full of internal jargon (\"rung\", \"judge \u2026 tier 1\", \"~3\u00d7 tokens\", \"wider: payments: all-or-nothing hold \u00b7 chaos\"), which makes it less useful to the reader.\n- It leans on statistical repetition over real latency as the main proof, instead of deterministic tests.\n- It leaves the rollback method underspecified.\n\nA has a small piece of filler: the concurrent last-unit test passes trivially, because the simulated reserve() reads and writes stock synchronously after its await, so two checkouts cannot race in single-threaded JS. That is minor next to B's gap on rollback.\n\nOverall, A shows somewhat deeper and more precise understanding and a sounder fix design. B is better at quantified verification. On balance A wins narrowly.",
+    "a_strengths": [
+      "Correctly finds the root cause (forEach(async) at checkout.js:6) and ties the 25 ms sleep vs 0\u201340 ms latency to the ~1 in 3 failure rate.",
+      "Lists three concrete production consequences: an empty reservations array, out-of-stock items still getting an orderId (unhandled rejection, possible server crash), and leaked holds on partial failure.",
+      "Picks the right method for all-or-nothing: Promise.allSettled plus release of the reservations that succeeded, a new release(sku, qty) API, and a typed OutOfStockError.",
+      "Makes tests deterministic by removing the sleep and injecting latency or using mock timers in the main plan, not as an afterthought.",
+      "Adds lint options to prevent recurrence: no-misused-promises / no-floating-promises, or a simpler no-restricted-syntax ban on forEach(async.",
+      "Flags the business consequence: an audit for overselling and stock drift since the bug shipped, written up in SHOP-412.",
+      "Offers a clear minimum version and explains why rollback is still worth doing."
+    ],
+    "b_strengths": [
+      "Works out the exact predicted failure rate (15/40 = 37.5%) and checks it against the notes' figure.",
+      "Sets a measurable success target (0 failures in 200 runs) and asks for before/after counts with the exact commands.",
+      "Uses a test-first method: build a 200-run harness and write sold-out and rollback tests that fail on the current code before fixing.",
+      "Covers the same core consequences: a sold-out cart gets an orderId, the error becomes an unhandled rejection, and partial holds are never released.",
+      "Gives a precise handoff prompt that another agent could run as written, ending with a list of what the tests do not cover."
+    ],
+    "a_weaknesses": [
+      "The concurrent last-unit test is close to filler: the simulated reserve() reads and writes stock synchronously after its await, so it passes trivially.",
+      "Gives no explicit before/after measurement or test-first step showing the new tests fail on the current code.",
+      "The 50-run CI stress step is a heuristic, with no reasoning about how many runs are enough to detect a flake."
+    ],
+    "b_weaknesses": [
+      "Leaves the rollback method unspecified. Promise.all plus rolling back reservations 'already taken' would miss reservations still in flight; it never mentions allSettled or that a release API is needed.",
+      "Pushes deterministic latency to a later rung and relies on statistical repetition over real random latency as the main proof.",
+      "Mentions order logs and CI history only as data it cannot reach; it does not recommend a production audit for overselling or stock drift.",
+      "The card is full of internal jargon ('rung', 'judge \u2026 tier 1', '~3\u00d7 tokens', 'chaos', 'payments: all-or-nothing hold'), which makes it less useful and adds vague filler."
+    ],
+    "skillWon": false,
+    "tie": false
+  },
+  {
+    "name": "flaky-checkout",
+    "lens": 3,
+    "skillWas": "A",
+    "winner": "A",
+    "confidence": 0.68,
+    "reasoning": "I read the fixture before the responses. The bug is in src/checkout.js:6. `cart.items.forEach(async ...)` means checkout() returns its `reservations` array before anything has been added to it. The test then sleeps 25 ms, while reserve() waits a random 0-40 ms, so about 15/40 = 37.5% of runs should fail. I ran the test 40 times and 13 failed (32.5%), which matches that estimate and NOTES.md's \"~1 in 3\". A sold-out SKU throws inside the forEach callback, so nothing catches the error, yet checkout still returns an orderId. No release() function exists, so nothing could undo a partial reservation.\n\nBoth responses get the diagnosis right, so neither invents the core facts. The difference is how each plan can be checked and how far it spreads.\n\nResponse A sets a measurable target: 0 failures in 200 runs, against an estimated 37.5% failure rate today, labelled \"est. from code\". Its method can be checked: a loop that runs node --test 200 times, plus new sold-out and partial-rollback tests that must fail on the current code before the fix. It also asks for before and after failure counts with the exact commands, and a list of what the tests do not cover. Its recommended scope is narrow and deep: fix checkout so it is all-or-nothing. It keeps the lint ban and deterministic latency as an optional next step and offers a floor-only option. It marks what it could not check (no CI history or remote, \"unverified\"). I checked its access claims: node 24, git and gh are present, and there is no git repo or remote, so \"no remote found\" holds.\n\nResponse B explains the problem more clearly and is a little more careful in places. It hedges that an unhandled rejection \"could also crash the server\", and it picks Promise.allSettled, the right tool for rollback. But it recommends the full plan, steps 1-3 plus the step-4 write-up. That brings in typescript-eslint type-aware linting on plain JS, a typed OutOfStockError, a concurrent-checkout test, a CI stress step and a production audit. That is bigger, not deeper. It never defines success beyond \"tests pass\", never asks to show that the new tests fail on the current code, and never asks for before and after numbers. Its \"Minimum version: steps 1 and 2 only\" contradicts itself, because steps 1 and 2 as written contain far more than the roughly 10-line change it then describes.\n\nA has filler of its own. \"wider: payments: all-or-nothing hold\" points at a payments system that does not exist in this project. The \"~3\u00d7 tokens\" and minute estimates cannot be checked. The status box relies on terms it never explains (\"rung\", \"tier 1\"). Even so, judged on trustworthiness and whether success can be checked, A's plan is easier to falsify and narrower.",
+    "a_strengths": [
+      "Concrete, falsifiable success criterion: 0 failures in 200 runs, compared against a stated, labelled estimate of 37.5% today (my 40-run check gave 32.5%, which is consistent)",
+      "Test-first: requires new sold-out and partial-rollback tests to be shown failing on the current code before the fix",
+      "Asks for before and after failure counts with the exact commands, plus a list of what the tests do not cover",
+      "Recommended scope is deep rather than wide (correct all-or-nothing checkout); lint and deterministic latency are deferred to an optional rung, and a floor-only choice is offered",
+      "Marks unverified items (CI history, order logs, no remote); its environment claims (node 24, git, gh, no remote) check out",
+      "The race math (15/40) is derived from the code and tied back to the '~1 in 3' in NOTES.md"
+    ],
+    "b_strengths": [
+      "Clearest explanation of the mechanism, with line references",
+      "Spells out production impact well: an empty reservations array at return, an orderId issued for a 0-stock SKU, and an appropriately hedged risk that the unhandled rejection crashes the process",
+      "Chooses Promise.allSettled for rollback, which is correct for knowing which reservations to release; notes that a new release() is needed in inventory.js",
+      "Honest about limits: 'I can only flag this, not do it' and 'I haven't changed anything yet'",
+      "Offers a smaller minimum option"
+    ],
+    "a_weaknesses": [
+      "'wider: payments: all-or-nothing hold' points at a payments system that does not exist in the project",
+      "'~3\u00d7 tokens' and the minute estimates cannot be checked",
+      "The status box relies on terms it never explains ('rung', 'floor', 'judge \u2026 tier 1'), which makes it harder to read",
+      "Does not say how rollback should handle in-flight reservations (Promise.all alone would not be enough), though the brief leaves implementation open"
+    ],
+    "b_weaknesses": [
+      "Scope creep: recommends the full plan, steps 1-3 plus the step-4 write-up, which brings in typescript-eslint type-aware linting on plain JS, a typed OutOfStockError, a concurrent-race test, a CI stress step and a production audit",
+      "No explicit measurable target, no baseline failure count, no before and after measurement, and no requirement to show the new tests fail on the current code",
+      "'Minimum version: steps 1 and 2 only' contradicts itself, because steps 1 and 2 as written are much larger than the ~10-line change it then describes",
+      "The concurrent-checkout test checks a property this in-memory simulation already has (the check and the decrement happen in the same synchronous step), so it adds work without adding coverage",
+      "'Every order since this code shipped may have been confirmed without a reservation' overstates things: in-stock reservations still complete, just after checkout returns"
+    ],
+    "skillWon": true,
+    "tie": false
+  },
+  {
+    "name": "acme-qbr",
+    "lens": 1,
+    "skillWas": "A",
+    "winner": "B",
+    "confidence": 0.6,
+    "reasoning": "I checked both responses against notes.md and q3_metrics.csv. Both find the same main story, and it is real: SMB took in 633 new customers in Q2 and 733 in Q3, lost 183 and 283, and so netted exactly 450 both quarters. SMB NPS fell from 41 to 29, and first response time went from 6.1h to 13.9h. Both say the support-to-churn link is only a trend from six data points. So both see through Sales' \"SMB is fine\" claim.\n\nA's numbers all check out. SMB MRR grew +1.2% from Jun to Sep while enterprise grew +12%, which is a sharper comparison than anything in B. A also notes that the data has no customer-base count, so a real churn rate can't be computed. It proposes a script that traces every slide figure back to the CSV. That has real value for an exec deck. The problem is that most of A is a cryptic status box (\"rung 2\", \"t3\", \"shadow 1 quarter\", \"wider analyst: MRR bridge \u00b7 ops: queue load math \u00b7 short: weakest claim\"), followed by a long block written as instructions for the agent. A busy reader gets the insight from the first paragraph and little from the rest. A never says what the 8 slides contain beyond \"2 exec decisions argued both ways\". It delivers slides.md rather than an actual deck, quotes about 50 minutes and 3\u00d7 tokens for the recommended option, and includes a \"4 of 5 cold readers\" target that it admits won't be measured.\n\nB is much easier to act on. Its table is mostly correct: 633/733 new, 183/283 churned, 450/450 net, tickets +66%, response time 2.3\u00d7 slower. Churn as a share of new customers rose from 23% to 40%, which checks out. B gives a concrete 8-slide arc the user can approve or change at a glance. That arc concedes Sales' point openly, shows how churn is eating growth, contrasts the healthy segments, and ends with specific options for execs to choose from. B also delivers a real deck (pptx/PDF) with speaker notes and a pre-read. It flags something that matters in practice: presenting this contradicts Sales in front of execs, so the user may want to preview it with the Sales lead first. Its list of missing data (CAC, churn reasons, revenue per account) is relevant.\n\nB has one real piece of filler. Slide 6 promises a straight-line projection showing SMB net adds turning negative within a few quarters. The monthly net adds (162, 137, 151, 157, 135, 158) are flat, and new customers and churn are both rising by about 10\u201311 a month. A straight line therefore does not go negative for many years. B also labels SMB MRR going from $182K to $192K (+5.7%) as \"roughly flat\", and puts April and September point values under columns headed Q2 and Q3. These are moderate flaws. The wrong projection is one slide that would probably come apart when built, while the core story is right.\n\nOverall, B is more likely to produce a clear, persuasive Thursday section with less effort spent decoding it, and it anticipates the political risk. A is more rigorous and has no errors, but it is badly communicated and less concrete about what the user gets. If B's projection claim weren't wrong, B would win clearly. Because of it, the margin is modest.",
+    "a_strengths": [
+      "Every figure is correct: churn rose from 48 to 104 a month, net adds were 450 in both Q2 and Q3, SMB MRR grew +1.2% from Jun to Sep against +12% for enterprise, and NPS fell from 41 to 29",
+      "The opening paragraph gives the insight and a recommendation in three sentences, which suits a busy reader",
+      "It notes that the data has no customer-base count, so no churn rate can be computed",
+      "Its script check that traces every slide figure to CSV rows would stop wrong numbers reaching the exec deck",
+      "It frames the section as exec decisions, each argued both ways, and calls the support-to-churn link a trend rather than a cause",
+      "Approving it takes one reply: go"
+    ],
+    "b_strengths": [
+      "Its table is readable and mostly correct (633/733 new, 183/283 churned, 450/450 net), and it adds a correct new number: churn as a share of new customers rose from 23% to 40%",
+      "It lays out a concrete 8-slide story the user can review at a glance: concede Sales' point, show the churn, give the likely cause with a caveat, contrast the healthy segments, ask execs to decide",
+      "It gives execs specific options to choose from: fund support, move acquisition spend into retention, or run a churn-reason sprint",
+      "It flags the risk of contradicting Sales in front of execs and suggests previewing the story with the Sales lead",
+      "Its deliverable fits the meeting: a real deck (pptx/PDF) with speaker notes and a pre-read",
+      "It lists useful missing data (CAC, churn reasons, revenue per account)"
+    ],
+    "a_weaknesses": [
+      "Most of it is an opaque jargon box ('rung 2', 't3', 'shadow 1 quarter', 'MRR bridge \u00b7 queue load math') that a busy human has to decode",
+      "It does not lay out what the 8 slides contain, so the user can't tell what they are approving",
+      "The second block is a prompt aimed at the agent, which is noise to the user",
+      "It delivers slides.md rather than an actual deck the user can present",
+      "The recommended option costs about 50 minutes and 3\u00d7 tokens, and the '4 of 5 cold readers' target is admittedly unmeasured",
+      "The rung 3 idea (replace MRR charts with a monthly alert) is out of scope for a Thursday deadline",
+      "It does not mention the political risk of contradicting Sales"
+    ],
+    "b_weaknesses": [
+      "Slide 6 promises a projection with SMB net adds turning negative within a few quarters, but monthly net adds are flat (about 150) and new customers and churn are rising at nearly the same rate, so the claim is unsupported filler",
+      "It calls SMB MRR going from $182K to $192K (+5.7%) 'roughly flat', and puts April and September point values under columns headed Q2 and Q3",
+      "It asks three questions before starting, one of which (is Q3 Jul\u2013Sep?) is unnecessary",
+      "It does not mention that churn rate can't be computed without a customer-base count, and offers no step to verify its numbers"
+    ],
+    "skillWon": false,
+    "tie": false
+  },
+  {
+    "name": "acme-qbr",
+    "lens": 2,
+    "skillWas": "B",
+    "winner": "B",
+    "confidence": 0.6,
+    "reasoning": "I read both project files and checked both responses against them. Here are the facts that matter. SMB gross adds were 633 in Q2 and 733 in Q3, churn was 183 and 283, and net adds were 450 in both quarters. Monthly SMB net adds are flat at about 135 to 162 (162, 137, 151, 157, 135, 158). They are not falling. SMB MRR rose only from $190.1K to $192.4K between June and September (+1.2%) even though 450 logos were added. NPS fell steadily from 41 to 29, first response rose from 6.1h to 13.9h, and the CSV has no customer-base count.\n\nBoth responses find the core story: Sales' \"more logos than ever\" is true but misleading, churn absorbs the growth, and SMB support and NPS are getting worse while mid-market and enterprise stay healthy. Both also see that the fix for a forgettable deck is to frame the section around a decision. So the difference comes down to correctness and method.\n\nCorrectness: every figure in B checks out. That includes churn 48\u2192104, SMB MRR +1.2% and enterprise +12% measured June\u2192September (the right quarter-end comparison), and the point that without an active-customer count you cannot compute a churn rate. That last point is a real methodological insight. A's headline numbers are right (450 = 450, +16% adds, +55% churn, churn at 23% then 40% of adds), but two planned slides rest on claims the data contradicts:\n- Slide 3 says the gap between gross adds and churn is shrinking. In absolute terms it is roughly constant (162 in April, 158 in September). Only the ratio shrinks.\n- Slide 6 promises a straight-line projection showing net SMB adds turning negative within a few quarters. A linear fit gives churn about +11.3 a month and adds about +10.7 a month, so net adds barely move and would take decades to go negative.\n\nThose are exactly the plausible-sounding overreaches an exec could challenge in the room. A's table also labels April and September values as Q2 and Q3 values for NPS, response time, tickets and MRR.\n\nMethod: B builds a check that traces every slide figure back to CSV rows (and proves it catches a planted error) before polishing. B argues each decision from both sides, holds the response-time link to \"trend, not cause\" with a stated reason, and names the right next analyses: a per-account churn and ticket export to test causation, support queue-load math, and an MRR bridge. B's top option, replacing the MRR charts with a monthly segment alert, goes after the root cause of the forgotten deck.\n\nA's method is more practical and readable. It has a concrete 8-slide arc, concedes the true part of Sales' claim, contrasts the segments, offers options for the ask, adds a pre-read, and raises a useful political question about contradicting Sales in front of execs. As a usable deck plan it is better than B.\n\nB has real weaknesses. Its card is dense with unexplained jargon (\"rung 2\", \"tier 1\", \"t3\", \"shadow 1 quarter\"). It gives no slide-by-slide outline. Its \"4 of 5 cold readers\" target is unmeasured pseudo-rigor. And slides.md is a weak format for an exec QBR.\n\nOn balance, the question asks for deeper and more correct understanding and a better method. B has no analytical errors, catches the churn-rate limitation, and proposes a verification-first process aimed at the main risk of a data deck (wrong or overstated numbers in front of execs). A's narrative is stronger, but it includes two incorrect analytical premises. B wins by a modest margin.",
+    "a_strengths": [
+      "Correct core arithmetic: Q2/Q3 gross adds 633/733, churn 183/283, net adds 450/450, churn at 23% of adds in April and 40% in September",
+      "Concrete, usable 8-slide narrative: one number, concede Sales, the leak, the likely cause, segment contrast, what happens if nothing changes, the ask with options, appendix",
+      "Treats the churn and response-time link as correlation from 6 data points, and says the interactive slider is illustrative only",
+      "Raises the stakeholder risk of contradicting Sales and suggests previewing with the Sales lead",
+      "Lists useful missing data (customer counts or revenue per account, churn by signup cohort, CAC) and asks sensible scoping questions",
+      "Readable and easy to act on"
+    ],
+    "b_strengths": [
+      "Every figure checks out against the CSV, including SMB MRR +1.2% and enterprise +12% measured June to September",
+      "Points out that the data has no active-customer count, so no true churn rate can be computed",
+      "Puts flat net adds (450 = 450) next to near-flat SMB MRR, hinting that logo growth isn't turning into revenue",
+      "Verification-first method: a script traces each slide figure back to CSV rows and is tested with a planted error",
+      "Frames the section around exec decisions, each argued from both sides with the number each side depends on",
+      "Names the right follow-up analyses: per-account churn and ticket export to test causation, support queue-load math, an MRR bridge",
+      "Its top option (replace MRR charts with a monthly segment alert) tackles the root cause of the forgotten deck"
+    ],
+    "a_weaknesses": [
+      "Slide 3 claims the gap between gross adds and churn is shrinking, but the absolute gap is roughly constant (162 in April, 158 in September); only the ratio shrinks",
+      "Slide 6 promises a straight-line projection with net SMB adds turning negative within a few quarters, but linear trends in adds (+10.7/mo) and churn (+11.3/mo) leave net adds nearly flat",
+      "Table labels April and September values as Q2 and Q3 for NPS, response time, tickets and MRR",
+      "Calls SMB MRR $182K to $192K 'roughly flat' (+5.7%) without bringing out the logo-versus-revenue disconnect",
+      "Has no plan to verify figures before they reach execs"
+    ],
+    "b_weaknesses": [
+      "Dense card full of unexplained jargon ('rung 2', 'tier 1', 't3', 'shadow 1 quarter', 'short: weakest claim') that hurts usability",
+      "No slide-by-slide outline, so the user can't see what the section will actually contain",
+      "'4 of 5 cold readers in 2 min' target is unmeasured pseudo-rigor",
+      "Proposes slides.md, a weak format for an exec QBR deck",
+      "Doesn't address the politics of contradicting Sales in front of execs",
+      "Heavy process overhead (cost estimates, tool availability) for a deck section"
+    ],
+    "skillWon": true,
+    "tie": false
+  },
+  {
+    "name": "acme-qbr",
+    "lens": 3,
+    "skillWas": "A",
+    "winner": "A",
+    "confidence": 0.7,
+    "reasoning": "I checked both responses against notes.md and q3_metrics.csv. Both find the same real insight. SMB gross adds went from 633 to 733 (Q2 to Q3) and churn went from 183 to 283, so net adds stayed at 450 in both quarters. Over the same months SMB NPS fell from 41 to 29 and first response slowed from 6.1h to 13.9h. That directly answers Sales' \"more logos than ever\" and the note that last quarter's deck was forgotten. So the question is which response is more accurate and easier to check.\n\nResponse A: every figure I recomputed is correct. That includes SMB MRR +1.2% from Jun to Sep, enterprise +12%, churn from 48 to 104, and the record 262 sign-ups in September. Its time bases are stated and sensible: Jun to Sep is the change across Q3. It is the only response with a concrete way to check the work. It plans a script that recomputes every slide figure from the CSV rows, proves the script by planting a wrong number and confirming it fails, and reports any figure it can't trace. It also says what it cannot claim. There is no customer base count, so it can't give a churn rate. The churn-versus-response-time link is called a trend with causes untested. The reader target is marked \"not measured\", and the cost figures are framed as estimates. Rung 3 (replace the MRR charts with a monthly alert) is scope creep, but it is offered as an option and A recommends rung 2.\n\nResponse B is more readable and has good judgment in places:\n- It flags the political risk of contradicting Sales in front of execs.\n- It asks whether Q3 means calendar Jul to Sep.\n- It lists specific data gaps: CAC, churn reasons, and customer counts.\n- Its core numbers are right, including churn at 23% of adds in April versus 40% in September, and +16% new logos against +55% churn.\n\nB has three verifiability problems:\n1. **The projection on slide 6 is a pre-decided, unsupported result.** B says a straight-line projection would show SMB net adds \"turning negative within a few quarters.\" Monthly SMB net adds are flat at about 135 to 162 (162, 137, 151, 157, 135, 158). A linear fit of new adds (slope about +10.7/mo) against churn (about +11.3/mo) gives a net slope of about -0.6/mo, which would take years to reach zero. The claim also conflicts with B's own headline that net adds are flat.\n2. **The Q2/Q3 table mixes bases without saying so.** Logos are quarterly sums, but MRR, tickets and first response are single April and September values shown under \"Q2\" and \"Q3\". \"Support tickets / mo: 920 vs 1,530\" is really April vs September. Only the NPS row says \"start \u2192 end\".\n3. **\"Roughly flat\" for SMB MRR is loose.** It is +5.7% from Apr to Sep, measured on the same basis as enterprise's +15%.\n\nB also has no step to verify the deck's numbers or to check that the deck worked. It adds an interactive slider page and a pre-read, which makes the work bigger rather than deeper, though it does caution against over-reading the slider.\n\nA's weaknesses are real. The card is dense and full of jargon (\"rung\", \"tier 1; readers t3\", \"shadow 1 quarter\", \"short: weakest claim\"), which hurts usefulness. It describes the slides less concretely than B's 8-slide outline. Its cold-reader target can't realistically be tested before Thursday, although A labels it as not measured. Still, by a skeptic's standard of penalizing unverifiable claims and plans with no way to check success, A is more trustworthy. Its numbers are accurate with stated bases, it uses hedged causal language, and it has a working check. B makes at least one invented quantitative claim and mislabels its table.",
+    "a_strengths": [
+      "Every number I checked against the CSV is correct, with clear time bases: Q2 and Q3 net adds both 450, SMB MRR +1.2% from Jun to Sep, enterprise +12%, churn from 48 to 104, NPS from 41 to 29, first response from 6.1h to 13.9h.",
+      "It has a concrete way to check the numbers: a script that recomputes every slide figure from the CSV, a planted wrong number to prove the script fails, and a report of any figure it can't trace or target it misses.",
+      "It is explicit about limits: no active-customer count so no churn rate, the response-time link is a trend not a cause (only 6 points), and the reader target is marked 'not measured'.",
+      "It recommends the middle option (rung 2, decision-focused) rather than the biggest one, and lets the user choose the scope ('go 0' for the floor only).",
+      "It frames the section around the decisions execs need to make, and each side of each decision is tied to the number it depends on."
+    ],
+    "b_strengths": [
+      "Clear, readable table and an 8-slide outline the user can picture straight away.",
+      "Core figures are correct: 633 vs 733 new logos, 183 vs 283 churned, net 450 in both quarters, churn at 23% of adds in April vs 40% in September, first response 2.3x slower.",
+      "Labels the churn, response-time and NPS link as correlation from 6 data points, not proof.",
+      "Asks useful questions: whether to contradict Sales in front of execs, whether Q3 means calendar Jul to Sep, and how much scope to build.",
+      "Lists the specific missing data (customer counts, churn reasons, CAC) and what each would add.",
+      "Says plainly which files it read."
+    ],
+    "a_weaknesses": [
+      "The card is dense and full of jargon ('rung', 'tier 1; readers t3', 'shadow 1 quarter', 'short: weakest claim'), which makes it harder for the user to act on.",
+      "Says less about what each of the 8 slides would show; most of the detail sits in the build instructions.",
+      "The '4 of 5 cold readers in 2 min' target can't realistically be tested before Thursday. It is honestly marked as not measured, but it looks like rigor without being checkable.",
+      "Rung 3 (replacing MRR charts with a monthly alert and a one-quarter trial) is scope creep beyond the request, though it is not the recommended option.",
+      "Cost and time figures and the list of available tools are stated without support.",
+      "Assumes Q3 means Jul to Sep and slides.md as the format without asking."
+    ],
+    "b_weaknesses": [
+      "Slide 6 states in advance that a straight-line projection will show SMB net adds 'turning negative within a few quarters'. Monthly net adds are flat (about 135 to 162), and a linear fit gives a net slope of about -0.6/mo, so the claim is unsupported and conflicts with B's own 'net adds flat' headline.",
+      "The Q2 vs Q3 table mixes bases without saying so: logos are quarterly sums, but MRR, tickets and first response are single April and September values under the Q2 and Q3 headings. 'Support tickets / mo' of 920 vs 1,530 is really April vs September.",
+      "'Roughly flat' for SMB MRR is loose: it is +5.7% from Apr to Sep, measured on the same basis as enterprise's +15%.",
+      "No step to check that the deck's numbers match the CSV, and no measure of whether the section succeeded.",
+      "The interactive slider page and pre-read make the work bigger rather than deeper, and the slider would rest on 6 data points (B admits this)."
+    ],
+    "skillWon": true,
+    "tie": false
+  },
+  {
+    "name": "tidepool-launch-post",
+    "lens": 1,
+    "skillWas": "A",
+    "winner": "A",
+    "confidence": 0.85,
+    "reasoning": "The project is a single 5-line README. It says Tidepool is a self-hosted family photo library that runs on a Pi, deduplicates photos from everyone's phones and does face recognition locally (\"nothing leaves your house\"). It ships next Tuesday after 18 months of work, and about 400 beta users came mostly from r/selfhosted. Neither response delivers the post, so both cost me another round trip. What matters is which one gets me a good post sooner.\n\nResponse A clearly read the repo, and its insight is real, not filler. It names \"nothing leaves your house\" as the claim r/selfhosted readers will press hardest and notes that nothing in the repo backs it up. It lists the six questions that readers will actually ask first: which Pi and how big a library, how long face indexing takes, whether anything phones home (it rightly includes model downloads), backup and export, license, and install method. It suggests putting the install command near the top. That checklist alone would improve my post and points me to the facts I need to gather before Tuesday. A also gives me a one-word reply (\"go\") with a time estimate. Its weaknesses: the ASCII card is full of jargon (\"rung\", \"tier 1\", \"claims.py\"), and building a claims-matching script before drafting is too much process for a 5-line source. The second code block is a prompt-style restatement I don't need to read.\n\nResponse B openly says it hasn't opened the repo, and the plan shows it. It proposes things that don't fit a family photo app: API stability guarantees, running code snippets, a 0.x to 1.0 migration guide pulled from git history, tabbed before-and-after code examples, LinkedIn posts, and audience options like \"data teams, or buyers at companies\" or \"Stripe-style polish\". It asks for the launch date and user details, which are already in the README. If I said \"go\", the default is a large launch kit (interactive page, social threads, newsletter, hostile-review agent) aimed at the wrong product type. That means a lot of wasted effort and a later correction. It also mentions a \"$4 budget\" that comes from nowhere. The fallback is reasonable but generic.\n\nFor a busy person acting today, A leads to a better post with less wasted effort, because it is grounded in the actual product, audience and risk. B would likely produce mismatched material or force me to answer questions the repo already answers.",
+    "a_strengths": [
+      "Read the repo and grounded everything in the README's actual facts (self-hosted, Pi, local face recognition, ~400 r/selfhosted beta users, ships Tuesday)",
+      "Flags the privacy claim ('nothing leaves your house') as the main risk with r/selfhosted readers and notes the repo has nothing to back it up",
+      "Gives a concrete, well-targeted list of six questions skeptical self-hosters will ask (Pi model and library size, indexing time, phone-home including model downloads, backup and export, license, install)",
+      "Practical advice: install command near the top, mark unsourced facts as [TK] rather than inventing them",
+      "Easy to act on: a one-word reply ('go') with time and cost estimates"
+    ],
+    "b_strengths": [
+      "Plans to mark unbacked facts as [TK] rather than make them up",
+      "Offers a clear fallback (just the post) and lets me choose parts",
+      "The hostile-reader review idea is sound in principle",
+      "Plain prose that is easy to scan"
+    ],
+    "a_weaknesses": [
+      "Doesn't deliver the post; another round trip is needed",
+      "The ASCII card is dense with jargon ('rung', 'tier 1', 'claims.py', 'judge') and takes effort to decode",
+      "Writing a claim-checking script before drafting is too much process for a 5-line source",
+      "The second code block reads like an internal prompt and adds little for me"
+    ],
+    "b_weaknesses": [
+      "Explicitly hasn't read the repo, so the plan is generic and doesn't fit the product",
+      "Proposes items that don't apply to a family photo app: API stability guarantees, a migration guide from git history, code-snippet verification, tabbed code examples",
+      "Asks for information the README already gives (launch date, users) and suggests the wrong audiences ('data teams, buyers at companies')",
+      "The default 'go' path is a large launch kit (interactive page, social threads, newsletter, LinkedIn) that would waste effort and likely need correcting",
+      "Mentions a '$4 budget' that has no basis in the context",
+      "Doesn't deliver the post"
+    ],
+    "skillWon": true,
+    "tie": false
+  },
+  {
+    "name": "tidepool-launch-post",
+    "lens": 2,
+    "skillWas": "B",
+    "winner": "B",
+    "confidence": 0.9,
+    "reasoning": "The whole project is a 5-line README. It describes Tidepool as a self-hosted family photo library that runs on a Raspberry Pi, deduplicates photos and does face recognition locally (\"nothing leaves your house\"). It ships next Tuesday after 18 months of side-project work, and its ~400 beta users mostly came from r/selfhosted. A good answer has to deal with how little source material there is, with who the audience is, and with the one big promise the product makes.\n\nResponse A says plainly that it hasn't opened the repo, and its plan reads like a generic developer-library launch. It talks about API guarantees, code snippets run against v1.0, a benchmark script, a 0.x to 1.0 migration guide built from git history, tabbed before-and-after code, and a 'production-ready?' FAQ. It suggests the audience might be 'developers, data teams, or buyers at companies' in a 'Stripe-style' voice. None of that fits a family photo app for home self-hosters. It also asks for the launch date, which the README already gives. It cites a '$4 budget' that appears nowhere in the project. The list is long, but most of it wouldn't apply, so it's filler. Its one good instinct is to mark unbacked facts as [TK] instead of making them up.\n\nResponse B read the file and builds its method on the real constraint: there is almost no source, so every claim has to trace back to a README line or be flagged [TK]. It points to the claim r/selfhosted readers will press hardest, 'nothing leaves your house', and notes nothing in the repo backs it. Its list of skeptic questions is specific and well chosen: which Pi model and library size, how long face indexing takes, whether anything phones home including model downloads, backup and export, license, and install method. The model-download point is especially sharp, because that is exactly how a 'local-only' face-recognition promise quietly fails. It also suggests putting the install command near the top for Show HN, and it scales effort as rungs with clear success targets.\n\nB has real weaknesses. The ASCII card is dense and full of jargon ('rung', 'judge claims.py tier 1', 'access \u2713 git gh python3'), which makes it harder to use. Writing a script to count unsourced claims in a blog post is somewhat over-engineered. Like A, it still hasn't drafted the post. But B shows a correct understanding of the actual product, audience and risk, while A misreads what Tidepool is. B wins clearly.",
+    "a_strengths": [
+      "Commits to marking unknown facts as [TK] instead of making them up",
+      "Offers a clear fallback and asks the user to choose a scope before starting",
+      "Its 'hostile review' step (reading the post as a skeptical HN commenter) is a sound idea in principle"
+    ],
+    "b_strengths": [
+      "Read the project and correctly saw that it is a single 5-line README, so the post can only claim what those lines say",
+      "Identifies 'nothing leaves your house' as the claim readers will press hardest, and notes nothing in the repo supports it",
+      "Lists six specific questions self-hosters would ask: Pi model and library size, indexing time, phone-home including model downloads, backup and export, license, install method",
+      "Builds the method on tracing every claim to a source or flagging it [TK], which fits how thin the source is",
+      "Notes audience details (r/selfhosted, Show HN with the install command up top) and the Tuesday deadline",
+      "Offers effort tiers with explicit targets and includes a ready-to-run prompt"
+    ],
+    "a_weaknesses": [
+      "Didn't read the README and says so, so the whole plan is generic",
+      "Treats Tidepool as a developer library or API (API guarantees, code snippets, a migration guide from git history, before-and-after code tabs), which doesn't fit a family photo app",
+      "Gets the audience wrong ('data teams, buyers at companies', 'Stripe-style polish') when the users are home self-hosters from r/selfhosted",
+      "Asks for the launch date, which the README already gives ('next Tuesday')",
+      "Cites a '$4 budget' that isn't in the project",
+      "Never engages with the central privacy and local-processing claim, or with Pi hardware limits",
+      "Launch-kit busywork (LinkedIn post, newsletter, X thread) stands in for real insight"
+    ],
+    "b_weaknesses": [
+      "The ASCII status card is dense and full of jargon ('rung', 'judge claims.py tier 1', 'access \u2713 git gh python3'), which makes it harder to read and act on",
+      "A script to count unsourced claims is heavy machinery for a blog post",
+      "Still doesn't draft the post; it stops at a proposal",
+      "The '4/5 readers get it in 30 s' target relies on readers the user would have to find, which is vague"
+    ],
+    "skillWon": true,
+    "tie": false
+  },
+  {
+    "name": "tidepool-launch-post",
+    "lens": 3,
+    "skillWas": "A",
+    "winner": "A",
+    "confidence": 0.9,
+    "reasoning": "The whole project is a 5-line README. It says Tidepool is a self-hosted family photo library that runs on a Pi or small server, dedupes photos from everyone's phones, and does local face recognition (\"nothing leaves your house\"). It also says v1.0 ships next Tuesday after 18 months, and that there are about 400 beta users, mostly from r/selfhosted. Neither response actually writes the post. Both are proposals waiting for a \"go\", so I judged them on how well they're grounded and whether their success can be checked.\n\nResponse A read the repo and says exactly what's there: one README, with no changelog, benchmarks or feedback. Each claim it makes traces back to those five lines. It points out the claim readers will push on hardest, \"nothing leaves your house\", and notes that nothing in the repo backs it up. That's a real, specific risk for an r/selfhosted audience, not filler. Its six pre-emptive questions fit that audience: Pi model and library size, how long face indexing takes, whether anything phones home (including model downloads), backup and export, license, and install method. It sets a measurable target (0 unsourced claims) and a way to check it (a claims-to-source script, tested by planting an unsourced sentence to prove it fails). It also admits the reader-comprehension target can't be met yet (\"none yet\", and it would need the user to find readers). Its weaknesses:\n- The card is dense jargon (\"rung\", \"tier 1\", \"t3\").\n- The claims.py checker is arguably more machinery than a 5-line source needs.\n- Cost figures like \"~3\u00d7 tokens\" and \"~10 min\" can't be verified.\n- The 4/5-readers target depends on people who don't exist yet.\n\nResponse B says outright, \"I haven't opened the repo.\" That shows in nearly every item:\n- It proposes \"API guarantees\", running code snippets \"against the v1.0 code here\", benchmark scripts, and a 0.x\u21921.0 migration guide \"from the git history\". The repo has no code and no git history.\n- It suggests the audience might be \"developers, data teams, or buyers at companies\". The README clearly points to families and self-hosters.\n- It asks for \"a launch date\" and \"who uses Tidepool\", both of which the README already answers.\n- It cites a \"$4 budget\" and says \"you asked to see the proposal first\". Neither is in the stated context, so both look invented.\n- Its scope grows outward instead of deeper: an interactive web page with live benchmark charts, threads for X/Bluesky, a LinkedIn post, a newsletter, and a generic FAQ (\"why not X?\").\n- Its \"hostile review\" has no pass/fail criterion.\n\nB does deserve credit for promising [TK] markers instead of made-up facts, and for offering a sensible fallback (just the post). But most of its plan is generic launch-kit advice that would fit any project, and a good share doesn't apply to this one at all. A is far more trustworthy and its success can actually be checked.",
+    "a_strengths": [
+      "Read the repo and accurately describes its contents (one 5-line README, no changelog, benchmarks or feedback)",
+      "Points out that the 'nothing leaves your house' privacy claim isn't backed by anything in the repo, which is the specific credibility risk for r/selfhosted",
+      "Lists six concrete pre-emptive questions suited to the real audience (Pi model and library size, indexing time, phone-home including model downloads, backup/export, license, install)",
+      "Sets a measurable success target (0 unsourced claims) and a checker that is tested against a planted unsourced sentence",
+      "Admits what can't be verified yet (reader test: 'none yet', needs the user) and marks missing facts as TK instead of inventing them",
+      "Grounds stakes in facts from the README (ships Tuesday, r/selfhosted audience)"
+    ],
+    "b_strengths": [
+      "Commits to marking unsourced facts as [TK] instead of fabricating them",
+      "Offers a smaller fallback (just the post)",
+      "Makes sensible editorial choices, such as keeping the feature list out of the post and leading with the problem",
+      "Readable prose structure with clear questions for the user"
+    ],
+    "a_weaknesses": [
+      "Doesn't deliver the post; it's a proposal waiting for 'go'",
+      "The card relies on dense private jargon ('rung', 'tier 1', 't3', 'judge') that is hard to parse",
+      "A claims-matching script for a 5-line source document is arguably over-engineered",
+      "Cost and time estimates (~3\u00d7 tokens, ~10/25 min) can't be verified",
+      "The reader-comprehension target (4/5 in 30 s) depends on readers who don't exist yet"
+    ],
+    "b_weaknesses": [
+      "Says outright that it didn't open the repo, so the plan isn't grounded in the project",
+      "Proposes things that don't exist here: API guarantees, code snippets run against the code, a migration guide from git history, benchmarks",
+      "Gets the audience wrong ('developers, data teams, buyers at companies') when the README points to families and self-hosters",
+      "Asks for the launch date and user info that the README already gives",
+      "Cites a '$4 budget' and says the user 'asked to see the proposal first'; neither is in the stated context, so both look invented",
+      "Large scope creep (web page with live charts, X/Bluesky/LinkedIn/newsletter, migration guide) instead of depth",
+      "The FAQ objections are generic ('why not X?'), and the hostile review has no pass/fail criterion",
+      "Doesn't deliver the post"
+    ],
+    "skillWon": true,
+    "tie": false
+  },
+  {
+    "name": "csv-export",
+    "lens": 1,
+    "skillWas": "A",
+    "winner": "A",
+    "confidence": 0.6,
+    "reasoning": "The project has two files. Dashboard.tsx is a bare 4-column table that imports a missing useOrders hook. FEEDBACK.md lists 37 export tickets and three quotes: Excel for an accountant, Stripe reconciliation, and a weekly rebuild in Google Sheets. Both responses read these files correctly and connected them. Both saw that users are rebuilding a weekly report by hand for someone else, and both flagged the missing useOrders.\n\nFor a busy person acting today, A gets to a good result with less effort. One word (\"go\") gets a well-scoped deliverable: an export button for the current view, with the CSV logic in a pure module. It handles RFC 4180 quoting, adds a UTF-8 BOM so Excel shows accented names, and blocks formula injection. A test script checks the output against a naive version. The injection guard matters here because the file goes straight into an accountant's Excel. A also lays out the bigger options (date-range and Stripe ID export, a scheduled weekly send) and says why they are blocked: the table has no date or charge ID, and useOrders is missing. A cost estimate and a ready-to-run brief are included.\n\nB gives the better strategic picture. It names scheduled reports and Sheets sync as the real fix for \"every Monday\", and it suggests a Stripe preset grouped by payout. It is also more honest about uncertainty: it asks whether the data has dates and Stripe IDs, while A states that the rows lack them, which it cannot know without useOrders. But B cannot proceed until the user answers two questions. Its recommended scope (filters, column picker, extra accounting fields) is larger, partly unrequested, and partly depends on data that may not exist. Items 4\u20135 (shared templates, background exports, audit logging) are filler for a repo this small. It also overclaims that the recommended scope \"covers all three complaints\", even though Stripe reconciliation likely needs backend data.\n\nA has real flaws. The status-card jargon (\"judge\", \"deeper/wider\", \"tier 1\") is dense. Its brief asks for both \"0 cells that don't match the input\" and \"0 live formulas\", which conflict once guarded cells get a prefix. Neutralising cells that start with \"-\" could turn negative totals (refunds) into text, which would break the accountant's sums, and A does not mention this. Its tool-access claims are unverified. Overall, A gives a faster, lower-risk, verified improvement and a clear ladder for later steps. B gives better product thinking but needs another round-trip and offers a broader, less certain scope.",
+    "a_strengths": [
+      "Acting on it takes one word ('go'), and the brief is ready to run with a clear scope",
+      "Points to a real risk tied to the users' workflow: formula injection and quoting when the file is opened in an accountant's Excel",
+      "A ladder of options that says why the higher rungs (date range, Stripe IDs, scheduled send) are blocked by missing data and useOrders",
+      "Includes a check that the work is correct (a test script, required to fail on a naive version first) and gives cost and time estimates",
+      "Keeps CSV logic in a pure module and ships the plain button first, so there is something useful early"
+    ],
+    "b_strengths": [
+      "Best read of the real problem: users are rebuilding a weekly report for someone else, and scheduled reports or Sheets sync would solve it",
+      "Concrete Stripe reconciliation idea (grouped by payout, with gross, fees, refunds and net)",
+      "Honest about what is unknown: it asks whether useOrders data has dates, fees and Stripe IDs instead of assuming",
+      "Clear split between what can be built client-side now and what needs a backend",
+      "Plain prose that is easy to scan"
+    ],
+    "a_weaknesses": [
+      "Jargon-heavy status card ('judge', 'deeper/wider', 'tier 1', 'access \u2713 gh') that a busy reader has to decode",
+      "States as fact that orders have no date or payment ID, though useOrders is missing so this is unknown",
+      "The two pass targets conflict: guarding '=' cells makes them differ from the input, which counts against the 0-mismatch target",
+      "Blanket neutralising of cells that start with '-' could turn negative totals into text, and this is not mentioned",
+      "The 500-row fuzz test is somewhat ceremonial, and the tickets '37\u2192<5' target is speculative"
+    ],
+    "b_weaknesses": [
+      "Blocks on two questions before any work starts, which costs a busy user a round-trip",
+      "Recommended scope (filters, column picker, accounting fields) is broader than asked and partly depends on data that may not exist",
+      "Templates, background exports and audit logging are generic filler for a two-file repo",
+      "Overclaims that the recommended scope 'covers all three complaints', though Stripe reconciliation likely needs backend data",
+      "No plan to check that the export is correct, and CSV-injection handling gets only a passing mention"
+    ],
+    "skillWon": true,
+    "tie": false
+  },
+  {
+    "name": "csv-export",
+    "lens": 2,
+    "skillWas": "B",
+    "winner": "B",
+    "confidence": 0.6,
+    "reasoning": "The project has two files. Dashboard.tsx is a bare four-column table (ID, Customer, Total, Status) that reads data from a useOrders hook whose file is not in the repo. FEEDBACK.md reports 37 export tickets and quotes three users: one copies the table into Excel every week for an accountant, one needs to reconcile against Stripe payouts, and one rebuilds the table in Google Sheets each week. A good answer has to see two things: the real need is a recurring report for someone else, and the data the table shows has no dates, payout IDs or fees, so a button alone cannot meet the reconciliation need.\n\nResponse A frames the users' need best. It says plainly that each of the three is rebuilding a weekly report by hand. Its Stripe preset, grouped by payout with gross, fees, refunds and net, reflects real knowledge of how reconciliation works. B's version, a Stripe charge ID on each row, is shallower. A also asks the right question: where does useOrders come from, and does the data have dates, currency, fees and Stripe IDs?\n\nA has three weaknesses:\n- **It contradicts itself.** It says parts 1 and 2 can be built client side \"now\" and claims the recommended scope \"covers all three complaints\". Its own question 1 admits the date filter, the accounting fields and the Stripe preset may all need data that does not exist. The Monday chore would also still be manual.\n- **It pads the plan.** Audit logging, background jobs for large exports, .xlsx output and shared templates have no basis in the files.\n- **It has no way to check its work.** The safety points (formula injection, BOM, CRLF) appear in one line, with no tests and no success criteria.\n\nResponse B is better grounded and has a much better method:\n- It names the decisive gap, \"rows have no date or charge ID\", as the reason a plain button falls short.\n- It ranks the options, from the plain button up to a weekly CSV sent automatically, with a ticket-count goal (37 to under 5).\n- It lists what blocks each higher option: useOrders is missing, and there is no Stripe, email or Sheets integration.\n- It recommends the highest option that can be built and checked today, and that option deals with real risks in these files. Customer is free text, the readers open the file in Excel, and names with commas or a leading \"=\" will break cells or run as formulas.\n- It sets a measurable target, writes a test script before the code, proves the script catches a naive join(\",\"), and comes with a ready-to-run brief.\n\nB also has flaws:\n- **It overstates a guess.** It says as fact that orders have no date or payment field, though useOrders is missing and only the displayed columns are known.\n- **Its safety rule would harm the accountant.** It tells the exporter to neutralise cells starting with \"-\", applied to every column. That would turn negative totals, such as refunds, into text in Excel, so they would no longer add up.\n- **Its test contradicts itself.** Prefixing risky cells changes their text, so \"0 cells that don't match the input\" would fail unless the test allows for the prefix.\n- **It is hard to read.** The terse status card with terms like \"rung\", \"judge\" and \"floor\" makes it less usable.\n\nOn balance, A is the better product brainstorm but overclaims what it can build and has no way to verify anything. B reads the files and the constraints more accurately and offers a rigorous, honest way to do the work, while still showing the more ambitious options and what blocks them.",
+    "a_strengths": [
+      "States the real need clearly: each user is redoing a weekly report by hand for someone downstream, so a button only saves the copy-paste step.",
+      "Shows real reconciliation knowledge: a Stripe preset grouped by payout, with gross, fees, refunds and net per payout.",
+      "Notes that useOrders is missing and there is no package.json, backend or tests, and asks whether the data includes dates, currency, fees and Stripe IDs.",
+      "Ties scheduled email and a Google Sheets sync directly to the 'every Monday' and 'rebuilds weekly' quotes.",
+      "Separates what can be built now from what needs a backend, and offers a scope choice."
+    ],
+    "b_strengths": [
+      "Names the decisive gap: the table has no date or charge ID, so a plain button cannot support reconciliation.",
+      "Ranks the options, from the plain button to an automatic weekly CSV, with a ticket-count goal (37 to under 5) and the blocker for each level (missing useOrders, no Stripe, email or Sheets).",
+      "Picks hardening that matters for these files: quoting per the CSV standard (RFC 4180), the OWASP formula-injection guard and a UTF-8 BOM, which matter because Customer is free text and the readers use Excel.",
+      "Writes a test script first: 500 generated rows, Python re-parses and compares the output, the script is shown to fail on a naive join(','), and the goal is 0 bad cells and 0 live formulas.",
+      "Includes a concrete, ready-to-run implementation brief with a pure CSV module, cost estimates and honest reporting of remaining failures."
+    ],
+    "a_weaknesses": [
+      "Claims parts 1 and 2 can be built client side 'now' and that the scope 'covers all three complaints', yet the date filters, accounting fields and payout grouping depend on data it admits may not exist; the weekly chore also stays manual.",
+      "Pads the plan with ideas the files do not support: audit logging, background large exports, .xlsx output, shared templates.",
+      "No verification plan, tests or success criteria; CSV safety gets one line.",
+      "Ends by blocking on two questions, with no first step it can take on its own."
+    ],
+    "b_weaknesses": [
+      "The recommended step is hardening the CSV, which deepens the literal request more than it fixes the weekly-report problem; the bigger ideas are only listed as higher options.",
+      "States as fact that orders lack date and payment fields, though useOrders is missing and only the displayed columns are known.",
+      "Applies the formula guard (including a leading '-') to every cell, which would turn negative totals or refunds into text in Excel and break the accountant's sums.",
+      "The test is internally inconsistent: neutralised cells will not match the input unless the test allows for the prefix, so '0 bad cells' cannot hold as written.",
+      "Its Stripe idea (a charge ID on each row) is shallower than payout-level reconciliation.",
+      "The terse status card full of terms like 'rung', 'judge' and 'floor' is harder to read."
+    ],
+    "skillWon": true,
+    "tie": false
+  },
+  {
+    "name": "csv-export",
+    "lens": 3,
+    "skillWas": "A",
+    "winner": "A",
+    "confidence": 0.74,
+    "reasoning": "The project has two files. Dashboard.tsx is a table with four columns (ID, Customer, Total, Status), and it imports useOrders, which is not in the repo. FEEDBACK.md lists 37 export tickets and three quotes: Excel for an accountant, Stripe reconciliation, and a weekly rebuild in Google Sheets. Both responses read these files accurately, so neither invents facts about the repo. They part ways on what \"aim higher\" means and on whether success can be checked.\n\nResponse A goes deeper instead of wider. The step it recommends, rung 1, is still just the export button, built to hold up under bad input: RFC 4180 quoting, protection against CSV formula injection, and a UTF-8 BOM. This ties directly to the FEEDBACK quote about an accountant opening the file in Excel, so the extra effort comes from the user's own evidence. Most importantly, it can be checked. A script generates 500 fuzzed rows, a Python csv parser reads the output back, and two counts must come out to 0: mismatched cells and live formulas. The script must also be shown to fail on a naive join(\",\") version, so a test that passes no matter what does not count. Wider features (date ranges, Stripe IDs, scheduled emails) are put on higher rungs, with clear notes on why they are blocked.\n\nResponse A has real flaws:\n- **Made-up numbers:** the time estimates (~10 and ~25 min, \"you ~5 min\", \"~2\u00d7 tokens\") and the \"tickets 37\u2192<5\" target are invented.\n- **Unchecked environment claims:** the access line marks node, tsc, python3 and gh as available, and nothing shows this was checked.\n- **An overclaim about the data:** it says \"orders have no date or payment ID field\", but the Order type lives in the missing useOrders.ts. All we know is that the table doesn't display those fields.\n- **Two goals that clash:** the guard changes any cell starting with \"=\", so the output can never match the input exactly. Requiring both counts to be 0 contradicts itself unless the script allows for the guard.\n- **Negative totals:** neutralising a leading \"-\" would turn negative Total values (refunds) into text in Excel.\n\nThese are fixable details inside a plan you can test.\n\nResponse B grounds its opening well. It notices there is no package.json, backend or tests, and its point that every user is rebuilding a weekly report for someone else is sharp. It then grows into a long feature list: filters, .xlsx, a column picker, accounting fields, a Stripe payout preset, scheduled emails, live Sheets sync, saved templates, background exports and audit logs. That is the \"bigger, not deeper\" pattern, and much of it is generic enterprise boilerplate with no support in the evidence (nothing suggests large exports or a need for audit logs). It is honest that parts 3\u20135 need a backend. But it also says parts 1\u20132, including a Stripe report grouped by payout with fees, refunds and net, can be built client-side \"now\". That claim is unsupported, and B quietly walks it back in its first question. B also has no success criterion, test, or measurable target at all. Its recommended scope adds date filters and accounting fields that may not exist in the data. On the other hand, B handles the unknown useOrders data more carefully than A, asking the user instead of asserting.\n\nFor a skeptic, A wins: tighter scope, rooted in the evidence, with a specific test that can fail. B gives a broader vision with nothing to check it against, and some of its feasibility claims contradict each other.",
+    "a_strengths": [
+      "Aims higher on correctness, not scope: the recommended step is the same button, made robust against commas, quotes, newlines and leading-'=' formula injection.",
+      "Gives a specific, falsifiable check: a test script fuzzes 500 rows, Python's csv parser reads them back, and mismatched cells and live formulas must both be 0.",
+      "Requires showing the test script fails on a naive rows.join(\",\") version, so the test cannot pass no matter what.",
+      "Ties the hardening to evidence: the FEEDBACK.md quote about Excel and an accountant is why formula injection and the BOM matter.",
+      "Notes that useOrders.ts is missing and that the table shows no date or charge ID, and defers the Stripe and date-range work instead of promising it.",
+      "Puts wider work on later rungs and says what blocks each one (Stripe access, mail/Sheets access), with a clear go / go 2 / go 0 choice."
+    ],
+    "b_strengths": [
+      "Reports the repo state accurately, including the missing useOrders, no package.json, no backend and no tests.",
+      "Sharp reading of the feedback: each user is redoing a weekly report by hand for someone downstream.",
+      "Honest that scheduled reports, Sheets sync, templates and audit logging need a backend and auth that don't exist here.",
+      "Treats the unknown order data properly, asking whether it includes dates, currency, fees and Stripe IDs instead of assuming.",
+      "Mentions Excel-safe CSV (BOM, CRLF, formula injection) as part of the format work.",
+      "Plain, readable prose with a single recommendation and two clear questions."
+    ],
+    "a_weaknesses": [
+      "Made-up numbers: the time estimates (~10 and ~25 min, 'you ~5 min', '~2\u00d7 tokens') and the 'tickets 37\u2192<5' target.",
+      "The access line (node, tsc, python3 and gh marked as available) is stated without any sign it was checked.",
+      "Overclaims that 'orders have no date or payment ID field'; the Order type is in the missing useOrders.ts, so only the displayed columns are known.",
+      "Its two goals clash: the guard changes cells that start with '=', so they can't also match the input exactly. Requiring both counts to be 0 contradicts itself unless the test script allows for the guard.",
+      "Neutralising a leading '-' per OWASP would turn negative totals (refunds) into text in Excel, and the response doesn't address this.",
+      "The card is dense with jargon ('judge', 'tier 1', 'wider: fuzzing'), and the 'wider' line reads as filler."
+    ],
+    "b_weaknesses": [
+      "Heavy scope creep: .xlsx, a column picker, saved templates, background exports, audit logging and Sheets sync are mostly generic enterprise features with no support in the evidence.",
+      "Claims parts 1\u20132, including a Stripe payout report with fees, refunds and net, can be built client-side 'now', then walks this back in its own question about whether the data exists.",
+      "No success criterion, test plan or measurable target, so nothing shows when the work is done or correct.",
+      "The recommended scope adds date-range filters and accounting fields that may not exist in the data, making the 'realistic' option wider instead of better tested.",
+      "Marketing-style lines such as turning 'any way to download?' into 'it already matches', with nothing to back them up.",
+      "Blocks on user answers without offering a small verified step it could deliver right away (only offers 'just the plain button' as an afterthought)."
+    ],
+    "skillWon": true,
+    "tie": false
+  }
+]

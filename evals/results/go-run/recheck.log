@@ -1,0 +1,4 @@
+node v24.19.0 · 2026-10-15T10:05:45Z · 300 runs each
+original suite:  111/300 runs failed
+fixed suite:     0/300 runs failed
+fixed tests vs original checkout.js: ℹ tests 4 ℹ pass 0 ℹ fail 4 

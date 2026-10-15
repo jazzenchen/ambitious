@@ -1,0 +1,114 @@
+diff --git a/src/checkout.js b/src/checkout.js
+index 61f7205..28a9668 100644
+--- a/src/checkout.js
++++ b/src/checkout.js
+@@ -1,10 +1,19 @@
+-import { reserve } from "./inventory.js";
++import { reserve, release } from "./inventory.js";
+ 
+ export async function checkout(cart) {
+-  const reservations = [];
+   // Reserve every line item in parallel to keep checkout fast.
+-  cart.items.forEach(async (item) => {
+-    reservations.push(await reserve(item.sku, item.qty));
+-  });
+-  return { orderId: `ord_${cart.id}`, reservations };
++  const results = await Promise.allSettled(
++    cart.items.map((item) => reserve(item.sku, item.qty)),
++  );
++  const failed = results.find((r) => r.status === "rejected");
++  if (failed) {
++    // All-or-nothing: give back whatever was reserved before failing.
++    await Promise.all(
++      results
++        .filter((r) => r.status === "fulfilled")
++        .map(({ value }) => release(value.sku, value.qty)),
++    );
++    throw failed.reason;
++  }
++  return { orderId: `ord_${cart.id}`, reservations: results.map((r) => r.value) };
+ }
+diff --git a/src/inventory.js b/src/inventory.js
+index 3413d03..94cbe22 100644
+--- a/src/inventory.js
++++ b/src/inventory.js
+@@ -1,15 +1,30 @@
+ // Simulated inventory service with variable network latency.
+ const stock = new Map([["sku-red-mug", 3], ["sku-blue-mug", 0]]);
++let latency = () => Math.random() * 40;
+ 
+ export async function reserve(sku, qty) {
+-  await new Promise((r) => setTimeout(r, Math.random() * 40));
++  await new Promise((r) => setTimeout(r, latency()));
+   const available = stock.get(sku) ?? 0;
+   if (available < qty) throw new Error(`out of stock: ${sku}`);
+   stock.set(sku, available - qty);
+   return { sku, qty, reservedAt: Date.now() };
+ }
+ 
++export async function release(sku, qty) {
++  await new Promise((r) => setTimeout(r, latency()));
++  stock.set(sku, (stock.get(sku) ?? 0) + qty);
++}
++
+ export function _reset() {
+   stock.set("sku-red-mug", 3);
+   stock.set("sku-blue-mug", 0);
++  latency = () => Math.random() * 40;
++}
++
++export function _setLatency(ms) {
++  latency = () => ms;
++}
++
++export function _stock(sku) {
++  return stock.get(sku) ?? 0;
+ }
+diff --git a/test/checkout.test.js b/test/checkout.test.js
+index 014000e..5efd1e2 100644
+--- a/test/checkout.test.js
++++ b/test/checkout.test.js
+@@ -1,12 +1,41 @@
+ import { test, beforeEach } from "node:test";
+ import assert from "node:assert/strict";
+ import { checkout } from "../src/checkout.js";
+-import { _reset } from "../src/inventory.js";
++import { _reset, _setLatency, _stock } from "../src/inventory.js";
+ 
+ beforeEach(() => _reset());
+ 
+ test("checkout reserves every item", async () => {
+   const order = await checkout({ id: 1, items: [{ sku: "sku-red-mug", qty: 1 }] });
+-  await new Promise((r) => setTimeout(r, 25)); // give reservations time to land
+   assert.equal(order.reservations.length, 1);
++  assert.equal(_stock("sku-red-mug"), 2);
++});
++
++test("checkout waits for slow reservations", async () => {
++  _setLatency(39);
++  const order = await checkout({ id: 2, items: [{ sku: "sku-red-mug", qty: 2 }] });
++  assert.deepEqual(order.reservations.map((r) => r.sku), ["sku-red-mug"]);
++  assert.equal(_stock("sku-red-mug"), 1);
++});
++
++test("checkout rejects an out-of-stock item", async () => {
++  await assert.rejects(
++    checkout({ id: 3, items: [{ sku: "sku-blue-mug", qty: 1 }] }),
++    /out of stock: sku-blue-mug/,
++  );
++});
++
++test("checkout releases partial reservations when one item fails", async () => {
++  _setLatency(0);
++  await assert.rejects(
++    checkout({
++      id: 4,
++      items: [
++        { sku: "sku-red-mug", qty: 2 },
++        { sku: "sku-blue-mug", qty: 1 },
++      ],
++    }),
++    /out of stock: sku-blue-mug/,
++  );
++  assert.equal(_stock("sku-red-mug"), 3);
+ });

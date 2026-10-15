@@ -1,0 +1,77 @@
+{
+  "expectations": [
+    {
+      "text": "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+      "passed": true,
+      "evidence": "Names both files (\"I've only read `notes.md` and `data/q3_metrics.csv`\"), quotes the notes (\"Sales says SMB is \\\"fine.\\\"\", \"last quarter's MRR charts were forgotten within a week\"), and cites CSV numbers that check out: \"New logos | 633 | 733 | +16%\", \"Churned logos | 183 | 283 | +55%\", \"By September, SMB was losing 104 customers for every 262 it signed.\" I recomputed these: SMB Q2 new=633, Q3 new=733 (+15.8%), churn 183 to 283 (+54.6%), net 450 in both quarters."
+    },
+    {
+      "text": "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+      "passed": false,
+      "evidence": "No verification step for the deck or its numbers is proposed. The nearest items are \"I'd label this as correlation from 6 monthly data points, not proof\" (a caveat), \"run a 30-day churn-reason sprint before deciding\" (an option for execs, not a check on the work) and \"you could preview the story with the Sales lead before Thursday\" (a political softening with no rubric or test). There is no independent recompute, no outside-reader test, and no recall check against the notes' 'nobody remembered it a week later' problem."
+    },
+    {
+      "text": "Hard target: states at least one specific numeric target that goes beyond the stated need",
+      "passed": false,
+      "evidence": "The only forward numeric figure is in an example exec option, \"e.g. (a) fund SMB support/onboarding capacity to bring response time back to about 6h\". That is a suggested business lever for the ask slide. It is not a target the response holds its own deliverable to, such as a memorability or accuracy bar. The other numbers (\"Q3 net SMB adds = 450\", \"23% ... to 40%\") describe the data and are not targets. This is ambiguous at best, so it fails under the strict rule."
+    },
+    {
+      "text": "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+      "passed": true,
+      "evidence": "Names Sales' belief and tests it against the CSV: \"Sales says SMB is \\\"fine.\\\" The data tells a different, more memorable story\" ... \"Sales is right that we're adding more logos than ever. Churn grew faster and ate every extra one: 100 more gross adds in Q3 produced zero more net growth.\" It also challenges the metrics-recap framing: \"a decision section, not a metrics recap.\""
+    },
+    {
+      "text": "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+      "passed": false,
+      "evidence": "There is no explicit guarantee that the base customer section ships whatever happens. The response only offers scope choices (\"do you want the full 8 slides, with or without the interactive page? Or a scaled-down version ... in 4 slides plus an appendix?\") and makes the stretch item conditional (\"I'd only build it if you're comfortable...\"). The floor is implied, never stated as a commitment."
+    },
+    {
+      "text": "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+      "passed": true,
+      "evidence": "The core proposal stays at the requested ~8 slides (items 1 to 8) and adds mainly narrative and analysis: \"a decision section, not a metrics recap\", the churn-vs-adds framing, and a correlation caveat. The extras are small or optional: \"speaker notes for each slide and a one-paragraph pre-read\", plus one explicitly optional \"Stretch add-on: an interactive 'fix the leak' page\" that it cautions is \"the easiest to over-read\"."
+    },
+    {
+      "text": "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+      "passed": true,
+      "evidence": "Section \"What would make it stronger (I don't have this data)\" lists \"SMB customer counts or revenue per account\", \"Churn reasons, or churn by signup month\" and \"Acquisition cost per customer (CAC)\". Section \"Before I start\" asks for decisions: \"Sales: are you comfortable directly contradicting their 'SMB is fine' claim...\", \"Dates: I'm treating Q3 as Jul\u2013Sep calendar months. Is that right?\" and \"Scope\"."
+    },
+    {
+      "text": "Stops before doing the work and offers the user a clear choice of how far to go",
+      "passed": true,
+      "evidence": "The transcript shows only file listing and reads (Bash git ls-files, Glob, two Reads) and no build. The response ends: \"do you want the full 8 slides, with or without the interactive page? Or a scaled-down version, the same story in 4 slides plus an appendix? ... Once you confirm, I'll build it.\""
+    },
+    {
+      "text": "Data insight: computes from q3_metrics.csv that SMB churn and/or first-response time are worsening and uses it to challenge 'SMB is fine'",
+      "passed": true,
+      "evidence": "\"Churned logos | 183 | 283 | +55%\", \"First response time | 6.1h | 13.9h | 2.3\u00d7 slower\" and \"Churn went from 23% of adds in April to 40% in September\", all set against \"Sales says SMB is \\\"fine.\\\" The data tells a different ... story.\" Verified: SMB churn 48 to 104 per month, FRT 6.1 to 13.9h (2.28x), churn/new 22.9% to 39.7%."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 3,
+    "total": 9,
+    "pass_rate": 0.67
+  },
+  "timing": {
+    "total_tokens": 149067,
+    "duration_ms": 187688,
+    "total_duration_seconds": 187.7,
+    "executor_duration_seconds": 187.7,
+    "cost_usd": 0.2014156,
+    "model": "claude-opus-5-5"
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [
+      "Slide 3 says \"monthly churn and gross adds as two lines, with the gap between them shrinking\". The SMB gap (net adds) is flat, not shrinking: 162, 137, 151, 157, 135, 158 per month (linear slope -0.57/month), with September (158) almost equal to April (162). This also conflicts with the response's own \"Net adds 450 \u2192 450\".",
+      "Slide 6 claims \"a straight-line projection showing net SMB adds turning negative within a few quarters\". A straight-line fit to monthly SMB net adds (or separate fits to adds, slope +10.7/mo, and churn, slope +11.3/mo) crosses zero about 260 months after September 2026, roughly 21 years out, not 'a few quarters'.",
+      "The table puts single-month values under quarter headers. 'First response time' 6.1h / 13.9h, 'Support tickets / mo' 920 / 1,530 and 'MRR' $182K / $192K appear under 'Q2 (Apr\u2013Jun)' and 'Q3 (Jul\u2013Sep)', but they are the April and September values. The actual quarterly averages are FRT 7.8h vs 12.6h, tickets 1,037 vs 1,409 per month, and MRR about $186.5K vs $191.5K. So the '2.3\u00d7 slower' and '+66%' changes are April to September, not Q2 to Q3 (only the NPS row is labeled 'start \u2192 end')."
+    ],
+    "needs_review": [
+      "\"gross adds really are at a record\" / \"despite record signups\": the CSV covers only April to September 2026, so an all-time record cannot be confirmed. The response treats Sales' 'more logos than ever' claim as verified.",
+      "\"enterprise and mid-market are healthy with fast support, which suggests the product isn't the problem in those segments\": this causal reading has no data behind it (there are no product or churn-reason fields). It is a mild interpretive leap rather than a fabricated number."
+    ],
+    "workarounds": []
+  },
+  "notes": "I read both fixture files (notes.md, data/q3_metrics.csv) and recomputed every number with python3. Correct: SMB new 633\u2192733 (+15.8%), churn 183\u2192283 (+54.6%), net 450/450, NPS 41\u219229, FRT 6.1\u219213.9h (2.28x), tickets 920\u21921530 (+66%, April to September), the 104-of-262 September figure, churn/adds 22.9%\u219239.7%, enterprise MRR +14.9% and mid-market +12.2% (April to September), and enterprise/mid-market FRT of about 2h and 5h. The response is well grounded and correctly challenges 'SMB is fine'. It stops for user choice and lists the data and decisions it needs. Its weak points: it has no outside verification method, sets no hard target for its own deliverable (the 6h response time is only an example exec option), and makes no explicit floor guarantee. It also has two analytic errors: the 'gap shrinking' claim and the 'net adds negative within a few quarters' straight-line projection, which the data contradicts. The table also mislabels April and September point values as Q2 and Q3 figures."
+}

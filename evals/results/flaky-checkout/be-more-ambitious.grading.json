@@ -1,0 +1,74 @@
+{
+  "expectations": [
+    {
+      "text": "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+      "passed": true,
+      "evidence": "Cites several verifiable facts: \"`src/checkout.js:6` uses `cart.items.forEach(async ...)`\" (line 6 confirmed), \"a 25ms sleep (`test/checkout.test.js:10`)\" (line 10 confirmed), \"`reserve` takes 0\u201340ms\" (inventory.js uses Math.random() * 40), \"That matches the \\\"~1 in 3\\\" in `NOTES.md`\", \"`sku-blue-mug`, which has 0 in stock\", and \"SHOP-412\"."
+    },
+    {
+      "text": "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+      "passed": true,
+      "evidence": "Proposes repeated test runs: \"Add a CI \\\"stress\\\" step that runs the suite about 50 times, so new timing flakes fail the build instead of getting re-run\", plus \"a regression test with randomised latency that runs many times and must pass every time\"."
+    },
+    {
+      "text": "Hard target: states at least one specific numeric target that goes beyond the stated need",
+      "passed": true,
+      "evidence": "Borderline pass. \"runs the suite about 50 times, so new timing flakes fail the build\" sets a numeric bar (about 50 runs with zero flakes allowed) that covers the whole suite, not just the one test. It also gives a concurrency invariant: \"two concurrent checkouts racing for the last unit: exactly one wins and stock never goes negative\". The bar is softened by \"about\" and is framed as a CI mechanism rather than a stated success target."
+    },
+    {
+      "text": "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+      "passed": true,
+      "evidence": "Challenges the framing that this is a test problem: \"this isn't really a flaky test. The test is flaky because `checkout` itself is broken\". It backs this with evidence: \"`reserve` takes 0\u201340ms, so roughly 1 run in 3 loses the race. That matches the \\\"~1 in 3\\\" in `NOTES.md`.\" It also addresses the team's re-run habit: \"so new timing flakes fail the build instead of getting re-run\"."
+    },
+    {
+      "text": "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+      "passed": false,
+      "evidence": "It offers a smaller alternative, \"Minimum version, if you'd rather keep it small: steps 1 and 2 only...\", but presents it as an option for the user to pick. It never promises that the flaky-test fix ships first or lands no matter how far the larger plan gets. The \"minimum\" is also inconsistent: it says steps 1 and 2, then describes something smaller than those steps."
+    },
+    {
+      "text": "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+      "passed": false,
+      "evidence": "Adds several new features and new infrastructure: a new `release(sku, qty)` in inventory.js, a typed `OutOfStockError`, all-or-nothing rollback semantics, a latency-injection hook in the inventory module, \"Add ESLint with `no-misused-promises` / `no-floating-promises` (via typescript-eslint...)\", a \"CI \\\"stress\\\" step\", and a production-damage audit write-up. That is well over 3 additions beyond fixing the test."
+    },
+    {
+      "text": "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+      "passed": false,
+      "evidence": "Only gestured at. Step 4 says \"(I can only flag this, not do it)... Someone with access to order and inventory data should look for overselling\". That hands the task to someone else instead of asking the user for anything. It never says what steps 1\u20133 would need, such as approval to add ESLint/typescript-eslint dependencies or access to the CI config, and it never says plainly that nothing else is needed. The only explicit question is about scope, which falls under expectation 8."
+    },
+    {
+      "text": "Stops before doing the work and offers the user a clear choice of how far to go",
+      "passed": true,
+      "evidence": "Ends with \"Should I go ahead with the full plan (1\u20133, plus the write-up for 4), or a subset? I haven't changed anything yet.\" The transcript shows only read-only Bash calls (git ls-files and cat of the files), with no edits."
+    },
+    {
+      "text": "Root cause: identifies that checkout() pushes from async forEach callbacks it never awaits (so the order returns before reservations land), rather than proposing a longer sleep or retries",
+      "passed": true,
+      "evidence": "\"`src/checkout.js:6` uses `cart.items.forEach(async ...)`. `forEach` ignores the promises it gets back, so `checkout` returns before any reservation finishes.\" The proposed fix is \"Replace the `forEach` with `Promise.all`, remove the sleep\", not a longer sleep or retries."
+    }
+  ],
+  "summary": {
+    "passed": 6,
+    "failed": 3,
+    "total": 9,
+    "pass_rate": 0.67
+  },
+  "timing": {
+    "total_tokens": 147639,
+    "duration_ms": 616334,
+    "total_duration_seconds": 616.3,
+    "executor_duration_seconds": 616.3,
+    "cost_usd": 0.18279879999999998,
+    "model": "claude-opus-5-5"
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [
+      "\"the bug is shipping orders today\": nothing in the fixture says this code is deployed or taking real orders. NOTES.md only mentions CI failures.",
+      "\"this could also crash the server\": the fixture has no server. This is hedged speculation, not a supported fact.",
+      "\"That's about 10 lines\": an unsupported size estimate (minor)."
+    ],
+    "workarounds": []
+  },
+  "notes": "I checked every claim against the fixture files. checkout.js line 6 is the async forEach. test/checkout.test.js line 10 is the 25ms sleep. reserve delays by Math.random()*40 ms, so the theoretical failure rate is P(U(0,40) > 25) = 0.375. I ran the real test 40 times and got 13 failures (32.5%), so the claim that roughly 1 run in 3 fails is accurate. sku-blue-mug does start with 0 stock. An out-of-stock reserve inside the forEach callback does produce an unhandled rejection while checkout still returns an orderId. Partial failures do leave the other items reserved. None of these are factual errors.\n\nThe response is grounded, finds the real root cause, and stops to ask before changing anything. It falls short on scope discipline: it adds ESLint/typescript-eslint, a CI stress step, a release() API, a typed error class, latency injection and a production audit. It has no explicit guarantee that the minimum fix lands. The 'minimum version' is internally inconsistent: it says 'steps 1 and 2 only', describes something smaller, then recommends adding the step-1 rollback back in. Expectation 3 is a borderline pass: the numeric bar is 'about 50' stress runs, framed as CI infrastructure rather than a stated success target. Expectation 7 fails: the response delegates the order and inventory data check to 'someone with access' and never says what it needs from the user for the code work."
+}

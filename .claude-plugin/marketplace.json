@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ambitious",
+  "owner": { "name": "Jazzen Chen", "url": "https://github.com/jazzenchen" },
+  "description": "Marketplace for the unofficial /ambitious skill",
+  "plugins": [
+    {
+      "name": "ambitious",
+      "source": "./",
+      "description": "Turns the task in front of you into the deepest version worth attempting — with an outside judge and your original ask as the floor.",
+      "category": "productivity"
+    }
+  ]
+}

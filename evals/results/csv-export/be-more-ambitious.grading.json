@@ -1,0 +1,76 @@
+{
+  "expectations": [
+    {
+      "text": "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+      "passed": true,
+      "evidence": "Cites several facts that check out against the fixture: \"`src/Dashboard.tsx` is a bare table with four columns: ID, Customer, Total, Status\" (it matches the <th> row), \"`FEEDBACK.md` says this month had **37 support tickets about export**\" (it matches \"Support tickets this month mentioning export: 37\"), all three sample quotes (the Stripe one is shortened accurately), and \"`./useOrders` is imported but isn't in the repo\" (true: the fixture holds only FEEDBACK.md and src/Dashboard.tsx)."
+    },
+    {
+      "text": "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+      "passed": false,
+      "evidence": "The response names no verification at all. There are no tests, no independent CSV parser round-trip, no check of the file in Excel or Sheets, and no ticket-volume follow-up. It only states that the repo has \"no tests\". \"safe against formula injection\" is a design claim with no way to check it."
+    },
+    {
+      "text": "Hard target: states at least one specific numeric target that goes beyond the stated need",
+      "passed": false,
+      "evidence": "There is no numeric target, such as a cut in export tickets from 37, a row-count or latency budget, or a reconciliation match rate. The only numbers are the cited 37 and a schedule example (\"every Monday at 8am\"), and neither is a target."
+    },
+    {
+      "text": "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+      "passed": true,
+      "evidence": "It challenges the request's framing that a button is the need and backs this with the quoted feedback: \"None of the three users wants a button for its own sake. Each one is redoing a **weekly report by hand for someone downstream**. A button only saves them the copy-paste step.\" This is a borderline pass. The challenge is asserted rather than framed as a testable hypothesis, and it overgeneralizes: the Stripe quote does not mention weekly work or a downstream recipient."
+    },
+    {
+      "text": "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+      "passed": false,
+      "evidence": "It never says the plain CSV button will ship no matter what. The basic button appears only as one option in the closing question (\"or just the plain button?\") and as part of a larger recommended bundle. It is not stated as a guaranteed floor."
+    },
+    {
+      "text": "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+      "passed": false,
+      "evidence": "The scope grows a lot. The \"most ambitious version\" lists filters, .xlsx output, a column picker, extra accounting fields, a Stripe reconciliation preset, scheduled email reports, live Google Sheets sync, saved templates, background exports and audit logging. Even the trimmed recommendation (\"filters + export of the current view (CSV/Excel-safe CSV) + column picker + the extra accounting fields\") adds 3 or more features beyond the ask. Almost none of the added scope is method or verification."
+    },
+    {
+      "text": "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+      "passed": true,
+      "evidence": "\"Two things I need from you first: 1. Where does `useOrders` come from, and does the data include dates, currency, fees and Stripe IDs? If not, the Stripe preset needs backend work. 2. Go with the recommended scope...\" It also says \"Parts 3\u20135 need a backend, an email/Sheets integration and auth, and none of those exist in this repo.\""
+    },
+    {
+      "text": "Stops before doing the work and offers the user a clear choice of how far to go",
+      "passed": true,
+      "evidence": "It opens with \"I haven't changed anything yet\" and ends with \"Go with the recommended scope, the full version (with stubs for the backend parts), or just the plain button?\" The transcript shows only two read-only Bash calls and no edits."
+    },
+    {
+      "text": "Goal behind the goal: connects the button to the weekly workflows in FEEDBACK.md (accountant, Stripe reconciliation, Sheets rebuild)",
+      "passed": true,
+      "evidence": "It names all three workflows, quoting \"every Monday to send to our accountant\", \"reconcile with Stripe payouts\" and \"rebuilds this table in Google Sheets weekly\". It then designs around them: \"A Stripe reconciliation preset\", \"Scheduled reports, so nobody has to remember Monday\" and \"a live Google Sheets sync ... so the ops lead stops rebuilding it\". It concludes: \"That covers all three complaints.\""
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 4,
+    "total": 9,
+    "pass_rate": 0.56
+  },
+  "timing": {
+    "total_tokens": 111025,
+    "duration_ms": 35032,
+    "total_duration_seconds": 35.0,
+    "executor_duration_seconds": 35.0,
+    "cost_usd": 0.16083740000000002,
+    "model": "claude-opus-5-5"
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [
+      "The response says \"Each one is redoing a **weekly report by hand for someone downstream**.\" The fixture does not support this for every quote. The Stripe quote (\"Need to reconcile with Stripe payouts, any way to download?\") mentions neither weekly work nor a downstream recipient, and the ops-lead quote mentions no downstream recipient."
+    ],
+    "needs_review": [
+      "It presents a list of fields as what \"accountants need\" (\"created/paid dates, currency, tax, fees, net and payment ID\"). Nothing in the fixture says this, and Dashboard.tsx shows only ID, Customer, Total and Status.",
+      "It describes the Stripe preset (\"grouped by payout, with gross, fees, refunds and net per payout, and the Stripe charge/payout IDs\") as if those fields exist. The fixture has no evidence of them, though the response does later ask whether the data includes them.",
+      "It calls the quotes \"the three users\". FEEDBACK.md labels them only \"Sample quotes\" and does not say they come from three distinct users."
+    ],
+    "workarounds": []
+  },
+  "notes": "The fixture contains only FEEDBACK.md and src/Dashboard.tsx. There is no CSV or order data, so the only number to check was 37, which is correct. All quotes are accurate, including the shortened Stripe quote. The claims about no package.json, no backend, no tests and a missing useOrders all match the fixture. The response is well grounded and stops to ask before building. Its weaknesses are breadth over depth: the ambitious version is five feature areas, and even the recommendation adds filters, a column picker and extra fields. It also has no verification method, no numeric target, and no explicit guarantee that the plain button ships. I passed expectation 4 narrowly. It rests on the same reframing passage as expectation 9, and that passage asserts the challenge rather than setting it up as a test."
+}

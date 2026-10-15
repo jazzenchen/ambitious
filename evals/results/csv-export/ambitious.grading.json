@@ -1,0 +1,77 @@
+{
+  "expectations": [
+    {
+      "text": "Grounded: cites at least two specific facts taken from the project's own files or data (numbers, file names, quoted lines)",
+      "passed": true,
+      "evidence": "\"found    37 export tickets this month; 3 quotes: Excel, Stripe, Sheets\" (37 and the 3 quotes match FEEDBACK.md); \"asked ... (Dashboard.tsx)\"; \"downloads the orders currently shown in the table (columns ID, Customer, Total, Status)\" (matches the <th> cells in src/Dashboard.tsx); \"src/useOrders.ts is missing from the repo\" (git ls-files shows only FEEDBACK.md and src/Dashboard.tsx)."
+    },
+    {
+      "text": "Outside judge: names a concrete, runnable verification that does not rely on the model grading its own work (e.g. repeated test runs, an independent parser, held-out data, a backtest, outside readers with a rubric)",
+      "passed": true,
+      "evidence": "\"judge    node writes CSV, python csv re-parses + diffs\" and \"write a judge script: generate 500 fuzzed order rows, build the CSV, re-parse it with Python's csv module, and report the count of cells that don't match the input and the count of cells Excel would run as formulas. Prove the judge fails on a naive rows.join(\",\") implementation\". It uses an independent parser and a mechanical diff, and it checks the judge against a known-bad baseline."
+    },
+    {
+      "text": "Hard target: states at least one specific numeric target that goes beyond the stated need",
+      "passed": true,
+      "evidence": "\"target   0 bad cells, 0 live formulas in 500 fuzzed rows\" goes beyond 'add a button'. Rung 3 also sets \"tickets 37\u2192<5\"."
+    },
+    {
+      "text": "Tests an assumption: names a belief embedded in the request or the team's framing and says how the evidence tests it (or already tests it)",
+      "passed": true,
+      "evidence": "\"doubt    \\\"a button is enough\\\" \u2192 rows have no date or charge ID\". The handoff prompt adds: \"orders have no date or payment ID field, so date-range and Stripe-reconciliation exports aren't possible yet.\" This names the request's built-in belief and the evidence that already undercuts it: the table columns set against the Stripe-reconciliation quote. The evidence is partly inferred, because the Order type lives in the missing useOrders file."
+    },
+    {
+      "text": "Floor kept: explicitly guarantees the original ask gets delivered regardless of how far the ambitious version gets",
+      "passed": true,
+      "evidence": "Ladder rung \"0 \u2537    floor: button saves visible rows; re-parses to same cells\"; the prompt says \"then deliver the plain button first and harden it until both counts are 0 ... Report any remaining failures with the judge's actual numbers\"; and there is a reply option \"go 0 (floor only)\". The plain button is delivered before any hardening."
+    },
+    {
+      "text": "Deeper, not bigger: does not balloon into 3+ new features or new infrastructure beyond the ask; added scope is mostly method, verification and insight rather than breadth",
+      "passed": true,
+      "evidence": "The recommended rung (marked \u25c0) is \"1 \u2502 safe on bad input: quotes, newlines, =formulas, UTF-8 BOM\". That rung hardens the same export and adds a fuzz judge (\"deeper   RFC 4180 quoting + OWASP CSV-injection guard, fuzzed rows\"). The broader items (date-range export, Stripe charge IDs, a weekly auto-sent CSV) appear only as optional rungs 2 and 3, not in the default plan."
+    },
+    {
+      "text": "Access audit: names the specific access, data or decisions it needs from the user (or states plainly that none are needed)",
+      "passed": true,
+      "evidence": "\"access   \u2713 node tsc python3 gh \u00b7 ~ useOrders.ts (you add) \u2192 2 \u00b7 \u2717 Stripe, mail/Sheets \u2192 3\" plus \"you ~5 min\". The transcript confirms node, tsc, python3 and gh are present. One small gap: it ties useOrders only to rung 2, yet Dashboard.tsx cannot compile at the floor without that file either."
+    },
+    {
+      "text": "Stops before doing the work and offers the user a clear choice of how far to go",
+      "passed": true,
+      "evidence": "Ends with \"\u2500\u2500 reply: go (rung 1) \u00b7 go 2 \u00b7 go 0 (floor only)\". The transcript shows only reads and a tool inventory; no files were written."
+    },
+    {
+      "text": "Goal behind the goal: connects the button to the weekly workflows in FEEDBACK.md (accountant, Stripe reconciliation, Sheets rebuild)",
+      "passed": true,
+      "evidence": "\"The users asking for this ... paste the file into Excel for an accountant, reconcile it against Stripe payouts, or rebuild it in Google Sheets\"; \"3 \u25b2 end the Monday copy: weekly CSV auto-sent\"; \"2 \u2502 reconcile-ready: date-range export + Stripe charge ID/row\". All three workflows are named and tied to the rungs."
+    }
+  ],
+  "summary": {
+    "passed": 9,
+    "failed": 0,
+    "total": 9,
+    "pass_rate": 1.0
+  },
+  "timing": {
+    "total_tokens": 137793,
+    "duration_ms": 61389,
+    "total_duration_seconds": 61.4,
+    "executor_duration_seconds": 61.4,
+    "cost_usd": 0.279867,
+    "model": "claude-opus-5-5"
+  },
+  "claims": [],
+  "user_notes_summary": {
+    "uncertainties": [
+      "\"Users are already rebuilding this table by hand every week (37 support tickets this month)\" stretches the data. FEEDBACK.md says 37 tickets *mention export*; only 2 of the 3 sample quotes describe a weekly manual rebuild (the Stripe quote is not weekly). It does not say that all 37 rebuild the table weekly.",
+      "\"the CSV will be opened in Excel by an accountant\" bends the quote slightly. The quote says the user copies the table into Excel to send to the accountant; it does not say the accountant opens a CSV in Excel."
+    ],
+    "needs_review": [
+      "\"orders have no date or payment ID field\" (handoff prompt) is stated as fact, but the Order type lives in useOrders, which is not in the repo. Only the rendered columns (id, customer, total, status) are verifiable. The card's narrower wording, \"rows have no date or charge ID\", is supported.",
+      "Cost estimates \"floor ~10 min \u00b7 rung 1 ~25 min, ~2\u00d7 tokens \u00b7 you ~5 min\" have no basis in the fixture (they are forecasts, not facts).",
+      "\"tickets 37\u2192<5\" is an aspirational target with no supporting baseline beyond the 37 count (acceptable as a target, but not grounded)."
+    ],
+    "workarounds": []
+  },
+  "notes": "I read both fixture files (FEEDBACK.md, src/Dashboard.tsx). The run's project copy is identical to the fixture (diff is empty). I recomputed the cited figures with python3: 37 tickets, 3 quotes, columns ID/Customer/Total/Status, and fields id/customer/total/status all match the response. The transcript shows the model read Dashboard.tsx and FEEDBACK.md, listed git files (which confirms useOrders is absent), and inventoried CLIs (node, tsc, python3 and gh are present, so the access line is accurate). No files were written, so it really did stop before doing the work.\n\nAll 9 expectations pass, with these caveats:\n- Expectation 4 rests on a partly inferred claim: no date or charge ID in the data model, when only the table columns are visible.\n- In expectation 7, useOrders.ts is tied only to rung 2, although the floor button also cannot compile or run without it.\n- The opening sentence slightly conflates the 37 export tickets with weekly hand-rebuilding.\n\nThe technical claims check out: RFC 4180 quoting of comma, quote and CR/LF; OWASP's injection characters (=, +, -, @, tab, CR); and a BOM for Excel UTF-8.\n\nPath graded: <workspace>/iteration-2/eval-csv-export/with_skill/run-1/outputs/response.md"
+}
