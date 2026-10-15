@@ -1,6 +1,6 @@
 # Example 1 — Fix a flaky test
 
-**Both runs fixed the flaky test, but only the `/ambitious` run also fixed a stock leak that plain Claude's version left in (a hidden check caught it, and a separate probe found it in 300 of 300 failed carts), at about 4 times the cost and 19 times the time, and two of the three blind judges preferred it.**
+**Both runs fixed the flaky test, but only the `/ambitious` run (skill version 3.2) also fixed a stock leak that plain Claude's version left in: a hidden check caught it, and a separate probe found it in 300 of 300 failed carts. The skill run cost about 3 times as much and took about 28 times as long (20 minutes against 44 seconds), and two of the three blind judges preferred it.**
 
 ## The starting point
 
@@ -69,109 +69,117 @@ It also noticed a remaining problem, said so plainly and left it alone:
 
 > **Something to decide later:** if one item in a cart is out of stock, the other items that were reserved successfully still use up stock, because nothing rolls them back. The old code had the same problem, and this fix doesn't change it.
 
-**What "a failed cart leaks held stock" means.** Picture a cart with one red mug (in stock) and one blue mug (sold out). Checkout tries to reserve both at once. The red mug's reservation succeeds, so one red mug is set aside for this order. The blue mug fails, so the whole order fails, which is correct. But nobody gives the red mug back. `Promise.all` also stops at the first failure without waiting for the other jobs, so sometimes the red mug's reservation is still on its way and lands after checkout has already reported the failure. Either way, a red mug ends up set aside for an order that doesn't exist, and no other customer can buy it. In a real shop, stock would show as unavailable while it sits on the shelf, and every failed cart would make it worse.
+**The stock leak, in plain words.** Picture a cart with one red mug (in stock) and one blue mug (sold out). Checkout tries to reserve both at once. The red mug's reservation succeeds, so one red mug is set aside for this order. The blue mug fails, so the whole order fails, which is correct. But nobody gives the red mug back. `Promise.all` also stops at the first failure without waiting for the other jobs, so sometimes the red mug's reservation is still on its way and lands after checkout has already reported the failure. Either way, a red mug ends up set aside for an order that doesn't exist, and no other customer can buy it. In a real shop, stock would show as unavailable while it sits on the shelf, and every failed cart would make it worse.
 
 ## With /ambitious
 
-Before changing anything, the skill printed the text and card below, copied from the run's transcript (the transcript is not included in this repo; [`response.md`](with/response.md) keeps only the final message). This is a different run from the demo on the repo's front page, so the card differs from that one.
+This run used version 3.2 of the skill. Before changing anything, it printed the sentence, card and prompt below. They are copied verbatim from [`card.md`](with/card.md). The run's full transcript is not included in this repo; [`response.md`](with/response.md) keeps its final message. This is a different run from the demo on the repo's front page, so the card differs from that one.
 
-> The test isn't really flaky. Checkout returns before it has reserved any stock, and an item that's out of stock still gets an order number, so the test is catching a real bug. Rung 2 fixes the bug and adds a check that stops it coming back.
+> The test isn't really flaky. `checkout()` returns before the stock reservation has finished, so an order for a sold-out mug still gets an order ID. Rung 1 fixes that and checks it with 1,000 clean test runs.
 
 ```text
 ── /ambitious ──────────────────────────────────────────────────────
 asked    fix the flaky checkout test (SHOP-412)
-found    checkout.js:6 forEach(async) returns before reserve() runs
-doubt    "the test is flaky" → the code is: 25ms sleep vs 0-40ms
-         latency fails 15/40 = 37.5%, NOTES says ~1 in 3
-stakes   out-of-stock throws go unhandled, so a sold-out cart still
-         gets an orderId; such orders may exist already
+found    checkout.js:6 forEach(async) is never awaited; returns early
+doubt    "the test is flaky" → test is right; checkout skips reserve
+stakes   sold-out sku gets an orderId; red ~1 in 3 CI runs for 2 wks
 
-  3 ▲    find orders already taken for sold-out stock, then fix them
-  2 │    check in npm test fails on async forEach / dropped promise ◀
-  1 │    await all holds; sold-out rejects, partial holds released
-  0 ┷    floor: test passes without the sleep, 500/500 runs green
+  2 │    ban un-awaited async in src/: lint gate fails CI on it
+  1 │    checkout awaits all; sold-out rejects, rolls back holds   ◀
+  0 ┷    floor: test passes 1,000/1,000 runs with no sleep in it
 
-deeper   await every promise with Promise.all, then stress-loop it
-wider    payments: all-or-nothing holds · chaos: 200ms random lag
-target   0 failures in 2,000 stress checkouts (now ~37%, est.)
-judge    scratch stress.js, tier 1, incl. sold-out cart; fails now
-access   ✓ node 24 git gh · ✗ order data, CI history → rung 3
-cost     floor ~10 min · rung 2 ~30 min, ~3× tokens · you ~5 min
-── reply: go (rung 2) · go 1 · go 0 (floor only) ───────────────────
+deeper   latency 0-40 ms vs 25 ms sleep → 15/40 = 37.5% red runs
+wider    concurrency: random latency orders · adversary: random carts
+target   0 fails in 1,000 runs + stock never < 0 (now ~37%, est.)
+judge    scratch stress loop + sold-out test; tier 1; must fail now
+access   ✓ node 24 git gh · ~ typescript-eslint dev dep (you OK) → 2
+access   ✗ order/CI history: can't check past oversold orders
+cost     floor ~10 min · rung 1 ~25 min, ~3× tokens · you ~3 min
+── reply: go (rung 1) · go 2 · go 0 (floor only) ───────────────────
 ```
 
 **What the card is saying**
 
 - **asked:** it restates the request and attaches the ticket number it found in `NOTES.md`.
-- **found:** line 6 of `src/checkout.js`, the `forEach(async ...)` explained above, is the real cause.
-- **doubt:** the team believes the *test* is flaky. The card checks that belief with arithmetic: a 25 ms wait against a 0 to 40 ms delay should fail about 15 runs in 40 (37.5%), which matches the team's "~1 in 3". So the fault is in the code.
-- **stakes:** what leaving it costs. A sold-out cart still gets an order number, and "unhandled" means the error is raised but nothing catches it. "May exist already" means real orders like that could already be in the system, but it had no way to check.
+- **found:** line 6 of `src/checkout.js`, the `forEach(async ...)` explained above, is the real cause. "Never awaited" means nothing waits for those jobs to finish, so checkout "returns early".
+- **doubt:** the team believes the *test* is flaky. The card says the opposite: the test is right to fail, because checkout skips past the reservation step.
+- **stakes:** what leaving it costs. A sold-out item (`sku`) still gets an order number, and CI has failed about 1 run in 3 for two weeks.
 - **The ladder** is the set of options, called rungs, with the most ambitious at the top. `◀` marks the one it recommends. Taking a rung means climbing to it one step at a time: the floor first, then each rung above it in turn.
-  - **Rung 3:** find past orders taken for sold-out stock and fix them. This needs the shop's order data, which it couldn't reach, so it isn't recommended.
-  - **Rung 2 (recommended):** add a test that fails if anyone writes this pattern again. A "dropped promise" is a slow job that gets started but whose result nobody waits for.
-  - **Rung 1:** wait for every reservation (a "hold"), reject sold-out items, and give back held stock when an order fails partway.
-  - **Rung 0, the floor:** exactly what was asked. The test passes without the wait, 500 times in a row. The floor is guaranteed; everything above it is extra.
-- **deeper:** the expert's method. Wait for every promise, then run the code thousands of times in a "stress loop" to shake out rare failures.
-- **wider:** methods borrowed from other fields. From payments: holds are all-or-nothing, so a failed order keeps nothing. From chaos testing: deliberately add up to 200 ms of random delay to see what breaks.
-- **target:** zero failures in 2,000 stress-test checkouts. Today's rate, about 37%, is labelled `est.` because it was worked out on paper, not measured.
-- **judge:** what decides success instead of Claude's own opinion: a throwaway script, written before the fix, that includes a sold-out cart and must fail on the current code. "Tier 1" is the skill's strongest kind of judge, a program that runs and returns a number.
-- **access:** `✓` marks the tools it could use: node 24 (the JavaScript engine), git (version history) and gh (GitHub's command-line tool). `✗` marks what it couldn't reach: real order data and past CI runs. Rung 3 would need both.
-- **cost:** estimated time for the floor and for rung 2, rung 2's token use as a multiple of the floor's (tokens are the chunks of text a model reads and writes, and what usage is billed on), and about 5 minutes of your time to review.
+  - **Rung 2:** a "lint gate". A linter is a tool that reads code and flags risky patterns; the gate makes CI fail whenever it finds an `async` job that nothing waits for. This needs a new tool installed in the project (see **access**), so it isn't recommended.
+  - **Rung 1 (recommended):** checkout waits for every reservation, rejects an order with a sold-out item, and "rolls back holds", meaning it gives back any stock it had already set aside for that order.
+  - **Rung 0, the floor:** exactly what was asked. The test passes 1,000 times in a row with the 25 ms wait taken out. The floor is guaranteed; everything above it is extra.
+- **deeper:** how an expert would get to the bottom of it. Here that is arithmetic: a 25 ms wait against a 0 to 40 ms delay should fail about 15 runs in 40 (37.5%), which matches the team's "~1 in 3".
+- **wider:** methods borrowed from other fields. From concurrency work (code where many things happen at once): let random delays change the order in which reservations come back. From the attacker's point of view: throw random carts at checkout.
+- **target:** zero failures in 1,000 runs, and stock never drops below zero. Today's failure rate, about 37%, is labelled `est.` because it was worked out on paper, not measured.
+- **judge:** what decides success instead of Claude's own opinion: a throwaway "stress loop" that runs the tests over and over and counts failures, plus a test with a sold-out item. "Tier 1" is the skill's strongest kind of judge, a program that runs and returns a number. "Must fail now" means it has to fail on today's code first, to prove it can tell broken from fixed.
+- **access:** `✓` marks the tools it could use: node 24 (the JavaScript engine), git (version history) and gh (GitHub's command-line tool). `~` marks something one step away: typescript-eslint, a linter, added to the project as a development-only tool, which needs your OK first (the skill always asks before adding anything to a project's list of dependencies). With it, rung 2 becomes possible. `✗` marks what it couldn't reach: order and CI history, so it can't check whether sold-out stock was already oversold.
+- **cost:** estimated time for the floor and for rung 1, rung 1's token use as a multiple of the floor's (tokens are the chunks of text a model reads and writes, and what usage is billed on), and about 3 minutes of your time to review.
 
-Under the card it printed ``Taking rung 2 (`--go`).``, because `--go` means "take the recommendation".
+After the card and its prompt (below), it printed ``Taking rung 1, the recommended one, as `--go` allows.``
 
 <details><summary>It also printed a ready-to-paste prompt (the same plan written for any AI tool)</summary>
 
 ```text
-In a Node ESM project, src/checkout.js:6 reserves cart items with `cart.items.forEach(async ...)`, so checkout() returns before any reservation lands. Out-of-stock errors from src/inventory.js reserve() become unhandled rejections, so a cart holding a 0-stock SKU still gets an orderId. test/checkout.test.js hides this with a 25 ms sleep against 0–40 ms of random latency, which fails about 37% of the time. First write a stress script that runs 2,000 checkouts, including a sold-out cart and a mixed cart, and fails on any missing reservation, any order for out-of-stock items, or any stock left held after a failure. Prove it fails on the current code. Then deliver the floor: checkout awaits every reservation (Promise.all), the test's sleep is removed, and 500 consecutive `node --test` runs pass. Next, make checkout all-or-nothing: if any reserve fails, release the holds already taken and reject. Finally, add a zero-dependency check to `npm test` that fails on async callbacks passed to forEach/map in src/, and prove it catches a planted example. Report any misses with numbers.
+In src/checkout.js, checkout() calls cart.items.forEach(async ...), so it
+returns { orderId, reservations } before any reserve() from
+src/inventory.js has finished. The test in test/checkout.test.js then
+sleeps 25 ms against 0–40 ms of simulated latency, which predicts about
+37.5% red runs (NOTES.md reports about 1 in 3). Make checkout await every
+reservation, reject the order when any item is out of stock, and release
+any holds it already placed. Then remove the sleep from the test and add
+tests for a sold-out cart and a mixed cart. Write the judge first and
+show that it fails on the current code: a sold-out-cart test plus a loop
+that runs the suite 1,000 times and counts failures. Then deliver the
+minimal test fix as the floor. Report the measured before and after
+failure counts, and anything the loop doesn't cover.
 ```
 </details>
 
-**What it did after `--go`**, in order, according to the transcript:
+**What it did after `--go`.** Its final reply opens:
 
-1. **Wrote the judge first.** It wrote a scratch script that runs checkouts over three kinds of cart (one red mug, one sold-out blue mug, and a mixed cart) and counts every problem. On the original code it reported 600 problems in 300 checkouts: 100 orders missing their reservation, 200 carts with a sold-out item accepted, and 300 errors nothing caught.
-2. **Measured the old test.** Its first measuring loop called the test runner the wrong way and showed 60 failures in 60 runs. It noticed that didn't match "1 in 3", re-ran with the project's own test command, and got 34 failures in 100.
-3. **The floor.** It made the same `Promise.all` change plain Claude made and removed the wait. The test passed 500 runs out of 500. But its own judge still failed: `FAIL 100 failures in 300 checkouts`. Every one was stock left held after a failed mixed cart, the same leak plain Claude shipped. Rung 1 was aimed at exactly this.
-4. **Rung 1.** It switched to `Promise.allSettled`, which means "wait until every reservation has finished, whether it succeeded or failed, then look at all the results". If any reservation failed, it gives back the ones that succeeded through a new `release()` function, then reports the error. Run against its own floor-only version, its new tests gave 2 passes and 1 failure: the leak test caught the leak. The core of [`src/checkout.js`](with/files/src/checkout.js):
-   ```js
-     const failed = results.find((r) => r.status === "rejected");
-     if (failed) {
-       // All or nothing: give back any stock this order did manage to hold.
-       const held = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
-       await Promise.all(held.map((r) => release(r.sku, r.qty)));
-       throw failed.reason;
-     }
-   ```
-5. **Rung 2.** It added [`test/no-async-foreach.test.js`](with/files/test/no-async-foreach.test.js), which reads every JavaScript file in `src/` and fails if it finds `.forEach(async`. It planted a copy of the original checkout in a scratch folder and confirmed the check flagged line 6.
-6. **Final judge runs:** 2,000 stress checkouts with 0 failures, and `npm test` run 500 times with 0 failures. Then it printed its receipt:
+> The checkout test is fixed and passed 1,000 out of 1,000 runs, compared with 65 failures in 200 runs before.
+
+It switched checkout to `Promise.allSettled`, which means "wait until every reservation has finished, whether it succeeded or failed, then look at all the results". If any reservation failed, it gives back the ones that succeeded through a new `release()` function in `src/inventory.js`, then reports the error. The core of [`src/checkout.js`](with/files/src/checkout.js):
+
+```js
+  const failed = results.find((r) => r.status === "rejected");
+  if (failed) {
+    // Give back whatever we did manage to hold before failing the order.
+    for (const r of results) {
+      if (r.status === "fulfilled") release(r.value.sku, r.value.qty);
+    }
+    throw failed.reason;
+  }
+```
+
+It deleted the 25 ms wait from the test and added two tests to [`test/checkout.test.js`](with/files/test/checkout.test.js): one checking that a sold-out item makes checkout fail, and one checking that a failed mixed cart (2 red mugs plus a sold-out blue mug) gives the red mugs back, so all 3 can then be ordered. Then it printed its receipt:
 
 ```text
 ── /ambitious · result ─────────────────────────────────────────────
-floor    ✓ checkout awaits all reserves; 25ms sleep removed
-rung 1   ✓ sold-out cart rejects; failed order frees its held stock
-rung 2   ✓ new test fails on forEach(async) in src/; caught planted
-target   0 fails in 2,000 stress checkouts (was 600 in 300)        ✓
-judge    stress.mjs . 2000 → PASS 0 failures in 2000 checkouts
-         npm test ×500 → failed 0/500 (old test failed 34/100)
-doubt    "the test is flaky" → refuted · code returned too early
-untested 200ms lag; other dropped-promise forms (.map w/o await)
-moved    stock check went via checkout(), which never threw on old
-         code; now calls reserve() directly
-files    src/checkout.js src/inventory.js (+release) · tests: 2 new
-         + no-async-foreach.test.js · no new deps
-cost     ~8 runs vs est. ~6 · tokens not visible
-next     order data access → find orders already sold out (rung 3)
+floor    ✓ sleep removed; test awaits real result · test/checkout.test.js
+rung 1   ✓ checkout awaits all; sold-out rejects; held stock released
+target   0/1000 failed vs 0/1000 (was 65/200, measured)            ✓
+judge    node stress.mjs judge.test.js 1000 → stress: 0/1000 failed
+judge    same loop on test/checkout.test.js → stress: 0/1000 failed
+doubt    "the test is flaky" → refuted · 3/4 judge tests failed on old
+untested past orders with sold-out items: no order data here
+untested oversell under concurrent carts was trivial before the fix
+files    checkout.js · inventory.js +release() · 2 new tests · no deps
+cost     2,200 runs, ~25 min wall vs ~25 min est. · tokens not visible
+next     check order logs since 1.4.2 for orders with sold-out skus
 ────────────────────────────────────────────────────────────────────
 ```
 
 A few lines need explaining:
 
-- **untested:** the chaos idea from the card (200 ms of delay) was never run, and the new check only catches `forEach(async`, not other ways of dropping a promise.
-- **moved:** it changed its own judge partway through and says so. Its leak check first went through `checkout()`, which on the old code never reported errors, so that check could never have seen a leak. It switched to calling `reserve()` directly. The skill requires any change to the judge to be reported in the open.
-- **cost:** the run could not see its own token count. The script that launched both runs recorded 846.5 seconds (about 14 minutes) and 831,121 tokens, against the card's guess of about 30 minutes.
-- **next:** the past-damage check (rung 3) still needs access to the order data.
+- **target:** the result against the goal: 0 failures in 1,000 runs, against a goal of 0 in 1,000. Before the fix, the test failed 65 times in 200 (32.5%). That figure is marked `measured`, unlike the card's paper estimate of about 37%.
+- **judge:** two separate checks, each run 1,000 times by its stress script: its own judge test file, and the project's test. Both had 0 failures.
+- **doubt:** its judge has 4 tests, and 3 of them failed on the old code, so the "flaky test" belief is marked refuted.
+- **untested:** what its checks don't prove. It had no order data, so it couldn't look for past orders of sold-out items. It also flags that the check for overselling when several carts check out at once was "trivial before the fix": the old code already passed it, so passing it now shows little.
+- **cost:** 2,200 test runs. It put its elapsed time ("wall", as in wall-clock time) at about 25 minutes, the same as its estimate on the card; the script that launched both runs recorded 1,212 seconds (about 20 minutes), $0.52 and 130,705 tokens. It could not see its own token count.
+- **next:** a suggested follow-up. 1.4.2 is the version number in the project's `package.json`.
 
-Its reply also warns that `checkout()` now throws `out of stock: <sku>` (stops with that error) instead of returning an order number, so code that calls it must handle that error. Plain Claude's version changes this too. In total the skill run changed 4 files (+54/−8 lines) and added one new function that other code can call, `release()`.
+There is no `moved` line, because it reported no change to its judge or target partway through. Its reply also says that callers will now get an error instead of an order number for a sold-out cart, and that nothing in this project relies on the old behaviour. Plain Claude's version changes this too. Its judge files (a stress script and a separate test file) were kept in a scratch folder outside the project, so they are not in this repo. Nothing was committed; it offered to commit on a branch for SHOP-412. In total the skill run changed 3 files (+32/−7 lines), added no new dependencies, and added one new function that other code can call, `release()`.
 
 ## What the hidden checks found
 
@@ -184,31 +192,31 @@ Neither run saw these checks. [`flaky_check.sh`](../../evals/outcomes/checks/fla
 The [log](../../evals/outcomes/results/flaky-hidden-checks.log), verbatim:
 
 ```text
-with_skill: {"suite_fail":0,"suite_runs":200,"H1":true,"H2":true,"H3":true}
+with_skill (v3.2): {"suite_fail":0,"suite_runs":200,"H1":true,"H2":true,"H3":true}
 without_skill: {"suite_fail":0,"suite_runs":200,"H1":true,"H2":true,"H3":false}
 ```
 
-A separate tester, also an AI model rather than a person, then probed both finished projects with one shared test script, 300 trials per scenario ([`measurements-and-judgments.json`](../../evals/outcomes/results/measurements-and-judgments.json)):
+A separate tester, also an AI model rather than a person, then probed both finished projects with one shared test script: 300 checkouts of a mixed cart (one red mug plus one sold-out blue mug), counting the red mugs in stock when checkout reported the failure and again 80 ms later, once any late reservation had landed. It also ran each project's tests against the other project's code ([`measurements-and-judgments.json`](../../evals/outcomes/results/measurements-and-judgments.json)):
 
 | Measure | Plain Claude | With /ambitious |
 |---|---|---|
 | Test suite failures in 200 runs | 0 / 200 | 0 / 200 |
 | H1 · H2 · H3 | pass · pass · **fail** | pass · pass · pass |
-| Failed mixed carts that leaked a red mug | **300 / 300** | 0 / 300 |
+| Failed mixed carts that lost a red mug | **300 / 300** | 0 / 300 |
 | Units of stock lost over those 300 trials | **300** | 0 |
-| Mug still held at the moment checkout reported failure | 159 / 300 | 0 / 300 |
+| Red mug's reservation still on its way when checkout reported failure | 148 / 300 | 0 / 300 |
 | Tests that check for the leak | 0 | 1 |
-| Its leak test, run on plain Claude's code | — | caught it 29 / 30 times |
-| Median time to report a failed cart | 21.3 ms | 30.5 ms |
-| Lines changed (files) | +18 / −5 (2) | +54 / −8 (4) |
-| Time · cost · tokens | 43.5 s · $0.18 · 114,685 | 846.5 s · $0.75 · 831,121 |
+| Its tests, run against the other version's code | all passed 20 / 20 (can't tell the two apart) | failed 17 / 20 (caught the leak) |
+| Average time to report a failed cart | 20.7 ms | 28 ms |
+| Lines changed (files) | +18 / −5 (2) | +32 / −7 (3) |
+| Time · cost · tokens | 43.5 s · $0.18 · 114,685 | 1,212 s · $0.52 · 130,705 |
 
 What the numbers mean:
 
 - **Both fixed the flake.** 0 failures in 200 full test runs each, and both pass H1 and H2.
-- **Only one fixed the leak.** In plain Claude's version, every failed mixed cart kept a red mug: 300 trials, 300 mugs. In 159 trials the mug was already set aside when checkout gave up. In the other 141, the reservation was still on its way and landed afterwards. Plain Claude's tests never try this case, so they can't notice it.
-- **The skill's own leak test works, mostly.** Run against plain Claude's code, it failed 29 times in 30. It is slightly unreliable because it checks indirectly, by trying to reserve 3 mugs, without waiting for reservations still on their way.
-- **The skill's version has weak spots too.** The new `forEach` check looks for the folder `src` relative to wherever it is run, so run from another folder it crashes with a "file not found" error (`ENOENT`). It also misses the pattern when `async` sits on the next line: it caught 1 of 2 in a test file. A failed cart takes a little longer to report (30.5 ms against 21.3 ms) because it waits for the slowest reservation. When several items fail, it reports only the first in cart order; plain Claude's version reports whichever failure happens first in time.
+- **Only one fixed the leak.** In plain Claude's version, every failed mixed cart kept a red mug: 300 trials, 300 mugs. In 152 trials the mug was already set aside when checkout gave up. In the other 148, the reservation was still on its way and landed afterwards. Plain Claude's tests never try this case, so they can't notice it.
+- **The skill's leak test works, mostly.** Run against plain Claude's code, it failed 17 times in 20, so it catches the leak most of the time but not every time. A test that only sometimes fails is itself a kind of flaky test, which the skeptic judge below holds against it.
+- **The skill's version has weak spots too.** The new `release()` function does no checking, so any code could add stock for something never reserved, or pass a negative amount. A failed cart takes a little longer to report (28 ms against 20.7 ms on average) because it waits for the slowest reservation. When several items fail, it reports only the first in cart order. And its judge files live outside the project, so you can't rerun them from this repo.
 
 ## What the blind judges said
 
@@ -216,17 +224,35 @@ Three judges, each an AI model rather than a person, compared the two finished p
 
 | Judge | Preferred | Confidence |
 |---|---|---|
-| Busy requester: wants the best real outcome today | /ambitious | 0.57 |
-| Senior practitioner: looks for the deeper, more correct method | /ambitious | 0.64 |
-| Skeptic: penalizes scope creep (doing more than was asked) and anything unverifiable | plain Claude | 0.80 |
+| Busy requester: wants the best real outcome today | /ambitious | 0.68 |
+| Senior practitioner: looks for the deeper, more correct method | /ambitious | 0.70 |
+| Skeptic: penalizes scope creep (doing more than was asked) and anything unverifiable | plain Claude | 0.74 |
 
-- **Busy requester:** both fix the flake equally reliably and plain Claude's is the safer minimal change, but `/ambitious` also closes a real stock leak in the same code for about five more minutes of review, so it gets a narrow edge.
-- **Senior practitioner:** its own probe found plain Claude's version leaked stock in 50 of 50 failed mixed carts against 0 of 50 for `/ambitious`. It judged that a real inventory bug and a source of future flaky tests, which outweighs the skill's extra scope and its awkward `forEach` check.
-- **Skeptic:** plain Claude's three-line fix is the smallest correct change and adds nothing invented. `/ambitious` invented a new `release()` function that the real stock service, which this file only imitates, may not have. It also made checkout all-or-nothing when nobody asked for that, and added a `forEach` check that is itself fragile.
+- **Busy requester:** both passed 100 of 100 runs, where the original failed 33 of 100. Plain Claude's 3-line change could be approved in seconds, and its leak was already in the old code, so it isn't a new bug. But `/ambitious` also closes the leak, which this judge saw as the likely source of the next flaky test, for a slightly closer review. Its verdict: "I'd ship A."
+- **Senior practitioner:** the two are equal on the core fix. Once checkout really reports failures, a half-failed cart becomes a path that really runs, and plain Claude's fix doesn't deal with the stock it leaves behind; when this judge ran the skill's rollback test against plain Claude's code, a failed order permanently used up 2 red mugs. It noted that `release()` isn't waited for, which would matter against a real, slow stock service.
+- **Skeptic:** plain Claude's is the smallest correct fix and adds no new function or behaviour. `/ambitious` invented a `release()` function that the real stock service, which this file only imitates, may not have, and added a rollback nobody asked for. Its new rollback test failed only 31 of 40 runs against a version without rollback: "For a ticket about a flaky test, that is a bad thing to add."
 
 ## Takeaway
 
-Here, `/ambitious` paid off because writing a check before the fix turned the problem plain Claude left as "something to decide later" into a measured bug (100 leaks in 300 checkouts) and then proved it fixed (0 in 2,000). Plain Claude saw the same problem, said so honestly, and left it. Use the skill when a hidden mistake costs something real, like stock, money or customer orders, and you can afford about 4 times the cost and 19 times the wait. If you want the smallest change to review in 30 seconds and plan to handle the leak yourself, plain Claude's answer was correct and candid about the gap.
+Here, `/ambitious` paid off because its recommended rung included giving back held stock, and it wrote checks that failed on the old code before changing anything. So it fixed the problem plain Claude flagged as "Something to decide later", and the hidden check H3 and the 300-trial probe confirm the difference. Plain Claude saw the same problem, said so honestly, and left it. Use the skill when a hidden mistake costs something real, like stock, money or customer orders, and you can afford about 3 times the cost and a 20-minute wait instead of a 44-second one. If you want the smallest change, one you can approve in seconds, and plan to handle the leak yourself, plain Claude's answer was correct and candid about the gap, and the skeptic judge preferred it as the smallest correct fix.
+
+## Earlier version (v3.1)
+
+The skill's previous version, v3.1, ran the same task against the same plain-Claude run. Version 3.2 exists because a human reviewer found the v3.1 deck looked worse than plain Claude's, and blind judges had preferred plain Claude on the deck (3–0) and the launch post (2–1). Its changes (a finished floor, no placeholders, helper scripts and backup copies kept out of the deliverable, looking at rendered pages) mostly matter for those tasks. On this code task, both versions made the same core fix.
+
+What v3.1 did differently: its card recommended a higher rung, a check inside `npm test` that fails on `forEach(async` and needs no new tools. Its stress script counted 600 failures in 300 checkouts on the old code. It made the same `Promise.allSettled` plus `release()` fix, and added [`test/no-async-foreach.test.js`](with-v3.1/files/test/no-async-foreach.test.js). Its result card reports 0 failures in 2,000 stress checkouts and 0 in 500 `npm test` runs, and openly notes that it fixed its own judge partway through ([`response.md`](with-v3.1/response.md)). Version 3.2's card offered a similar check as rung 2, but as a lint tool that needed your OK to install, so it recommended rung 1 and, under `--go`, stopped there.
+
+| | v3.1 | v3.2 |
+|---|---|---|
+| Rung taken | 2: fix, leak, `forEach` check | 1: fix, leak |
+| Hidden checks | 0 / 200 suite failures; H1, H2, H3 pass | 0 / 200 suite failures; H1, H2, H3 pass |
+| Failed mixed carts that lost a red mug | 0 / 300 | 0 / 300 |
+| Its leak test against plain Claude's code | caught it 29 / 30 times | caught it 17 / 20 times |
+| Lines changed (files) | +54 / −8 (4) | +32 / −7 (3) |
+| Time · cost · tokens | 846.5 s · $0.75 · 831,121 | 1,212 s · $0.52 · 130,705 |
+| Blind judges | 2–1 for v3.1 (0.57, 0.64; skeptic 0.80 for plain Claude) | 2–1 for v3.2 (0.68, 0.70; skeptic 0.74 for plain Claude) |
+
+Both versions passed all three hidden checks. The probe and leak-test numbers come from different testers using their own scripts ([v3.1 measurements](../../evals/outcomes/results-v3.1/measurements-and-judgments.json)), so small differences between the columns don't mean much. v3.1's extra `forEach` check had its own flaws: run from any folder other than the project's top folder it failed with a "file not found" error (`ENOENT`), and it missed the pattern when `async` sat on the next line (it caught 1 of 2 in a sample file the tester wrote). The skeptic judge marked it down as a fragile test added while fixing a flaky one.
 
 ## Files
 
@@ -234,16 +260,21 @@ Plain Claude ([`./without`](without/)):
 - [`prompt.txt`](without/prompt.txt) · [`response.md`](without/response.md)
 - [`files/src/checkout.js`](without/files/src/checkout.js) · [`files/test/checkout.test.js`](without/files/test/checkout.test.js)
 
-With /ambitious ([`./with`](with/)):
-- [`prompt.txt`](with/prompt.txt) · [`response.md`](with/response.md) (local scratch paths replaced with `<tmp>`)
-- [`files/src/checkout.js`](with/files/src/checkout.js) · [`files/src/inventory.js`](with/files/src/inventory.js)
-- [`files/test/checkout.test.js`](with/files/test/checkout.test.js) · [`files/test/no-async-foreach.test.js`](with/files/test/no-async-foreach.test.js)
+With /ambitious, v3.2 ([`./with`](with/)):
+- [`prompt.txt`](with/prompt.txt) · [`card.md`](with/card.md) · [`response.md`](with/response.md) (local scratch paths replaced with `<scratchpad>`)
+- [`files/src/checkout.js`](with/files/src/checkout.js) · [`files/src/inventory.js`](with/files/src/inventory.js) · [`files/test/checkout.test.js`](with/files/test/checkout.test.js)
+
+With /ambitious, v3.1 ([`./with-v3.1`](with-v3.1/)):
+- [`prompt.txt`](with-v3.1/prompt.txt) · [`response.md`](with-v3.1/response.md) (local scratch paths replaced with `<scratchpad>`)
+- [`files/src/checkout.js`](with-v3.1/files/src/checkout.js) · [`files/src/inventory.js`](with-v3.1/files/src/inventory.js)
+- [`files/test/checkout.test.js`](with-v3.1/files/test/checkout.test.js) · [`files/test/no-async-foreach.test.js`](with-v3.1/files/test/no-async-foreach.test.js)
 
 Starting project: [`evals/fixtures/flaky-checkout/`](../../evals/fixtures/flaky-checkout/)
 
 Raw eval output ([`evals/outcomes/results/flaky-checkout/`](../../evals/outcomes/results/flaky-checkout/)):
 - without: [`prompt.txt`](../../evals/outcomes/results/flaky-checkout/without_skill/prompt.txt) · [`response.md`](../../evals/outcomes/results/flaky-checkout/without_skill/response.md) · [`diff.patch`](../../evals/outcomes/results/flaky-checkout/without_skill/diff.patch) · [`diffstat.txt`](../../evals/outcomes/results/flaky-checkout/without_skill/diffstat.txt) · [`timing.json`](../../evals/outcomes/results/flaky-checkout/without_skill/timing.json)
-- with: [`prompt.txt`](../../evals/outcomes/results/flaky-checkout/with_skill/prompt.txt) · [`response.md`](../../evals/outcomes/results/flaky-checkout/with_skill/response.md) · [`diff.patch`](../../evals/outcomes/results/flaky-checkout/with_skill/diff.patch) · [`diffstat.txt`](../../evals/outcomes/results/flaky-checkout/with_skill/diffstat.txt) · [`timing.json`](../../evals/outcomes/results/flaky-checkout/with_skill/timing.json)
+- with (v3.2): [`prompt.txt`](../../evals/outcomes/results/flaky-checkout/with_skill/prompt.txt) · [`response.md`](../../evals/outcomes/results/flaky-checkout/with_skill/response.md) · [`diff.patch`](../../evals/outcomes/results/flaky-checkout/with_skill/diff.patch) · [`diffstat.txt`](../../evals/outcomes/results/flaky-checkout/with_skill/diffstat.txt) · [`timing.json`](../../evals/outcomes/results/flaky-checkout/with_skill/timing.json)
+- with (v3.1): [`prompt.txt`](../../evals/outcomes/results-v3.1/flaky-checkout/with_skill/prompt.txt) · [`response.md`](../../evals/outcomes/results-v3.1/flaky-checkout/with_skill/response.md) · [`diff.patch`](../../evals/outcomes/results-v3.1/flaky-checkout/with_skill/diff.patch) · [`diffstat.txt`](../../evals/outcomes/results-v3.1/flaky-checkout/with_skill/diffstat.txt) · [`timing.json`](../../evals/outcomes/results-v3.1/flaky-checkout/with_skill/timing.json)
 - Hidden checks: [`flaky_check.sh`](../../evals/outcomes/checks/flaky_check.sh) · [`flaky_hidden.test.js`](../../evals/outcomes/checks/flaky_hidden.test.js) · [`flaky-hidden-checks.log`](../../evals/outcomes/results/flaky-hidden-checks.log)
-- Measurements, and the judges' verdicts with the A/B labels decoded: [`measurements-and-judgments.json`](../../evals/outcomes/results/measurements-and-judgments.json)
-- Method: [`OUTCOMES.md`](../../evals/outcomes/OUTCOMES.md) · [`run_outcomes.sh`](../../evals/outcomes/run_outcomes.sh) · the skill: [`SKILL.md`](../../skills/ambitious/SKILL.md)
+- Measurements, and the judges' verdicts with the A/B labels decoded: [v3.2](../../evals/outcomes/results/measurements-and-judgments.json) · [v3.1](../../evals/outcomes/results-v3.1/measurements-and-judgments.json)
+- Method: [`OUTCOMES.md`](../../evals/outcomes/OUTCOMES.md) · [`run_outcomes.sh`](../../evals/outcomes/run_outcomes.sh) · the skill (v3.2): [`SKILL.md`](../../skills/ambitious/SKILL.md)

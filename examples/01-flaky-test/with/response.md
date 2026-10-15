@@ -1,25 +1,24 @@
-I fixed it. The test was never the problem. Checkout returned before it had reserved any stock, and sold-out items still got an order number. Checkout now waits for every reservation and rejects sold-out items. If an order fails partway, it gives back any stock it had already reserved. A new check in `npm test` stops the original pattern from coming back. Nothing is committed.
+The checkout test is fixed and passed 1,000 out of 1,000 runs, compared with 65 failures in 200 runs before. It was never really a flaky test. `checkout()` returned before stock was reserved, so an order for a sold-out item still got an order ID, and the test's 25 ms wait only sometimes covered the 0–40 ms simulated delay. Now checkout waits for every item, rejects the order if anything is out of stock, and puts back stock it had already reserved for that order.
 
 ```text
 ── /ambitious · result ─────────────────────────────────────────────
-floor    ✓ checkout awaits all reserves; 25ms sleep removed
-rung 1   ✓ sold-out cart rejects; failed order frees its held stock
-rung 2   ✓ new test fails on forEach(async) in src/; caught planted
-target   0 fails in 2,000 stress checkouts (was 600 in 300)        ✓
-judge    stress.mjs . 2000 → PASS 0 failures in 2000 checkouts
-         npm test ×500 → failed 0/500 (old test failed 34/100)
-doubt    "the test is flaky" → refuted · code returned too early
-untested 200ms lag; other dropped-promise forms (.map w/o await)
-moved    stock check went via checkout(), which never threw on old
-         code; now calls reserve() directly
-files    src/checkout.js src/inventory.js (+release) · tests: 2 new
-         + no-async-foreach.test.js · no new deps
-cost     ~8 runs vs est. ~6 · tokens not visible
-next     order data access → find orders already sold out (rung 3)
+floor    ✓ sleep removed; test awaits real result · test/checkout.test.js
+rung 1   ✓ checkout awaits all; sold-out rejects; held stock released
+target   0/1000 failed vs 0/1000 (was 65/200, measured)            ✓
+judge    node stress.mjs judge.test.js 1000 → stress: 0/1000 failed
+judge    same loop on test/checkout.test.js → stress: 0/1000 failed
+doubt    "the test is flaky" → refuted · 3/4 judge tests failed on old
+untested past orders with sold-out items: no order data here
+untested oversell under concurrent carts was trivial before the fix
+files    checkout.js · inventory.js +release() · 2 new tests · no deps
+cost     2,200 runs, ~25 min wall vs ~25 min est. · tokens not visible
+next     check order logs since 1.4.2 for orders with sold-out skus
 ────────────────────────────────────────────────────────────────────
 ```
 
-- **Behaviour change:** `checkout()` now throws `out of stock: <sku>` instead of returning an order number. Any caller that relied on always getting an order number needs to handle that error.
-- **Possible damage already done:** for as long as this code has been live, sold-out items could have been ordered, and failed orders may have kept stock reserved. I couldn't check because I have no access to order data. That's rung 3.
-- **Limit of the new check:** it only catches `forEach(async …)`. It won't catch other ways of dropping a promise, such as a `.map(async …)` whose results are never awaited.
-- **Scratch files:** the stress script is `<scratchpad>/stress.mjs`. The floor-only version of checkout is saved as `<scratchpad>/checkout.floor.js` if you want only the minimal fix.
+- **How checkout works now:** reservations still run in parallel (`src/checkout.js:5`), using `Promise.allSettled`. If any item fails, the items it did reserve are released through the new `release()` in `src/inventory.js`, and the out-of-stock error is passed back to the caller.
+- **Callers:** any code that relied on getting an order ID for a sold-out cart will now get an error instead. Nothing in this repo does that.
+- **Check the judge yourself:** the stress script and the separate test file are kept outside the project:
+  - `<scratchpad>/stress.mjs`
+  - `<scratchpad>/judge.test.js`
+- **Not committed:** the three modified files are still uncommitted. Say the word if you want a commit on a branch for SHOP-412.

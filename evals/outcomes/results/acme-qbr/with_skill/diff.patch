@@ -1,373 +1,554 @@
-diff --git a/deck/customer_section.md b/deck/customer_section.md
+diff --git a/qbr/TO_CONFIRM.md b/qbr/TO_CONFIRM.md
 new file mode 100644
-index 0000000..f507735
+index 0000000..a8b420d
 --- /dev/null
-+++ b/deck/customer_section.md
-@@ -0,0 +1,143 @@
-+% Customer — Q3 2026 QBR
++++ b/qbr/TO_CONFIRM.md
+@@ -0,0 +1,8 @@
++# Customer section: to confirm before Thursday
 +
-+## Q3 in one line: total MRR grew 8.1%, but SMB growth has stalled
++- **Customer base totals by segment.** The data has new and churned counts but no total customers, so the deck gives "losses per 100 sign-ups" and no churn rate. With totals, slides 3 and 8 can show a real rate.
++- **SMB exit reasons.** Slides 4 and 7 present slower support and rising losses as a pattern, not a cause. Exit reasons, or a test on part of the SMB queue, would tell them apart.
++- **Support cost.** Call 1 asks for funding, but no cost figure is in the data, so the slide doesn't size the ask. Add one if support can provide it.
++- **Deck styling.** The slides use a neutral style. Paste them into the master QBR template if there is one.
 +
-+- Total MRR grew $65.9k to $878.5k; enterprise MRR supplied 72.8% of that growth.
-+- SMB signed 15.8% more new logos than in Q2, yet SMB net adds stayed at 450.
-+- Two decisions for today, both about SMB (last two slides).
-+
-+::: notes
-+Lead with the tension, not the charts. The rest of the section backs these three lines.
-+:::
-+
-+## Where Q3 MRR growth came from (end of June → end of September)
-+
-+| Segment | Jun | Sep | Added | Share of growth |
-+|---|---|---|---|---|
-+| Enterprise MRR | $398.0k | $446.0k | +$48.0k | 72.8% |
-+| Mid-market MRR | $224.5k | $240.1k | +$15.6k | 23.7% |
-+| SMB MRR | $190.1k | $192.4k | +$2.3k | 3.5% |
-+| Total MRR | $812.6k | $878.5k | +$65.9k | |
-+
-+## SMB: more new logos, same net adds
-+
-+:::: {.columns}
-+::: {.column}
-+
-+| SMB | Q2 | Q3 | Change |
-+|---|---|---|---|
-+| SMB new logos | 633 | 733 | +15.8% |
-+| SMB churned | 183 | 283 | +54.6% |
-+| SMB net adds | 450 | 450 | none |
-+
-+:::
-+::: {.column}
-+
-+- Sales is right that SMB is signing more: 733 SMB new logos in Q3 vs 633 in Q2.
-+- But SMB churned rose by the same 100, so SMB net adds did not move.
-+- SMB MRR rose only $2.3k in Q3 (net of churned, new, up- and downgrades; the file does not split these).
-+
-+
-+:::
-+::::
-+## SMB churn rose in every month since April
-+
-+:::: {.columns}
-+::: {.column}
-+
-+| | Apr | May | Jun | Jul | Aug | Sep |
-+|---|---|---|---|---|---|---|
-+| SMB churned | 48 | 61 | 74 | 83 | 96 | 104 |
-+| SMB churn as % of new | 22.9% | 30.8% | 32.9% | 34.6% | 41.6% | 39.7% |
-+
-+:::
-+::: {.column}
-+
-+- SMB churned equalled 39.7% of SMB new logos in September, up from 22.9% in April.
-+
-+:::
-+::::
-+
-+::: notes
-+We cannot give a churn *rate*: the data has no active-customer count. Churn as a share of new logos is the best ratio available.
-+:::
-+
-+## SMB service and satisfaction slipped over the same months
-+
-+:::: {.columns}
-+::: {.column}
-+
-+| | Apr | Jun | Sep |
-+|---|---|---|---|
-+| SMB tickets | 920 | 1,180 | 1,530 |
-+| SMB first response (h) | 6.1 | 9.8 | 13.9 |
-+| SMB NPS | 41 | 35 | 29 |
-+
-+:::
-+::: {.column}
-+
-+- SMB first response more than doubled; mid-market went 4.2 → 5.1 h and enterprise 2.0 → 2.3 h.
-+- SMB churn, tickets, response time and NPS all moved together for six months.
-+- That is a trend, not proof of cause: six data points cannot show which drives which.
-+
-+
-+:::
-+::::
-+## Mid-market and enterprise: steady
-+
-+:::: {.columns}
-+::: {.column}
-+
-+| | Q2 | Q3 |
-+|---|---|---|
-+| Mid-market net adds | 89 | 89 |
-+| Enterprise net adds | 11 | 14 |
-+| Mid-market NPS (Jun → Sep) | 44 | 44 |
-+| Enterprise NPS (Jun → Sep) | 50 | 51 |
-+
-+:::
-+::: {.column}
-+
-+- Mid-market churned rose 13 → 18; worth watching, not yet a pattern.
-+
-+
-+:::
-+::::
-+## Decision one: move part of Q4 SMB spend from acquisition to support capacity?
-+
-+**For**
-+
-+- SMB first response went 6.1 → 13.9 h while SMB churn went 48 → 104 a month.
-+- SMB NPS fell 41 → 29 since April; mid-market NPS 47 → 44, enterprise NPS 52 → 51.
-+- Extra SMB acquisition in Q3 (+15.8% new logos) bought zero extra SMB net adds.
-+
-+**Against**
-+
-+- Cause is untested: churners may be poor-fit new logos, which support hours will not fix.
-+- SMB is 3.5% of Q3 MRR growth; the same money may return more in enterprise.
-+
-+**What would settle it:** tickets and tenure of the SMB accounts that churned (needs customer IDs from CRM + support desk).
-+**Owner / decide by:** [TK: owner] / [TK: date]
-+
-+## Decision two: should the SMB goal be net adds and MRR instead of new logos?
-+
-+**For**
-+
-+- SMB new logos rose 15.8% and SMB net adds did not move; a new-logos goal counted growth that segment churn then cancelled out.
-+- SMB MRR rose only $2.3k in Q3 while the logo goal was being hit.
-+
-+**Against**
-+
-+- Changing a sales goal mid-year disrupts comp plans [TK: check comp terms].
-+- A net-adds goal makes sales answer for churn that support and product may drive.
-+
-+**What would settle it:** tenure of SMB accounts at churn (needs customer IDs). If most churners were signed this year, the logo goal is buying churn; if not, keep it.
-+**First step either way:** add active customers per segment to the monthly metrics file.
-+**Owner / decide by:** [TK: owner] / [TK: date]
-+
-+## Appendix: data and method
-+
-+- Source: data/q3_metrics.csv — monthly, by segment, April to September.
-+- Missing: active customer base (no churn rate), customer IDs (no ticket→churn link), churn reasons.
-+- Every number in this section is tied to that file by deck/verify_deck.py.
-+- Figures-only version: deck/customer_section_floor.md.
-diff --git a/deck/customer_section.pptx b/deck/customer_section.pptx
++Rebuild: `python3 qbr/build_customer_section.py` · Check every figure: `python3 qbr/check_figures.py`
+diff --git a/qbr/build_customer_section.py b/qbr/build_customer_section.py
 new file mode 100644
-index 0000000..4a87b19
-Binary files /dev/null and b/deck/customer_section.pptx differ
-diff --git a/deck/customer_section_floor.md b/deck/customer_section_floor.md
-new file mode 100644
-index 0000000..078fc3f
+index 0000000..2d2dd4b
 --- /dev/null
-+++ b/deck/customer_section_floor.md
-@@ -0,0 +1,75 @@
-+% Customer — Q3 2026 QBR (floor version: figures only)
++++ b/qbr/build_customer_section.py
+@@ -0,0 +1,390 @@
++"""Build the Customer section of the Acme Q3 2026 QBR from data/q3_metrics.csv.
 +
-+## Customer metrics, Q3 vs Q2
-+
-+:::: {.columns}
-+::: {.column}
-+
-+| Segment | Q2 | Q3 | Change |
-+|---|---|---|---|
-+| SMB new logos | 633 | 733 | +15.8% |
-+| Mid-market new logos | 102 | 107 | +4.9% |
-+| Enterprise new logos | 12 | 15 | +25.0% |
-+
-+:::
-+::: {.column}
-+
-+Source: data/q3_metrics.csv, months summed per quarter.
-+
-+
-+:::
-+::::
-+## Churned customers, Q3 vs Q2
-+
-+| Segment | Q2 | Q3 | Change |
-+|---|---|---|---|
-+| SMB churned | 183 | 283 | +54.6% |
-+| Mid-market churned | 13 | 18 | +38.5% |
-+| Enterprise churned | 1 | 1 | flat |
-+
-+## Net adds (new minus churned), Q3 vs Q2
-+
-+| Segment | Q2 | Q3 |
-+|---|---|---|
-+| SMB net adds | 450 | 450 |
-+| Mid-market net adds | 89 | 89 |
-+| Enterprise net adds | 11 | 14 |
-+
-+## MRR by segment, end of June vs end of September
-+
-+| Segment | Jun | Sep | Change |
-+|---|---|---|---|
-+| SMB MRR | $190.1k | $192.4k | +1.2% |
-+| Mid-market MRR | $224.5k | $240.1k | +6.9% |
-+| Enterprise MRR | $398.0k | $446.0k | +12.1% |
-+| Total MRR | $812.6k | $878.5k | +8.1% |
-+
-+## NPS by segment
-+
-+| Segment | Apr | Jun | Sep |
-+|---|---|---|---|
-+| SMB NPS | 41 | 35 | 29 |
-+| Mid-market NPS | 47 | 44 | 44 |
-+| Enterprise NPS | 52 | 50 | 51 |
-+
-+## Support tickets, Q3 vs Q2
-+
-+| Segment | Q2 | Q3 | Change |
-+|---|---|---|---|
-+| SMB tickets | 3,110 | 4,227 | +35.9% |
-+| Mid-market tickets | 1,007 | 1,163 | +15.5% |
-+| Enterprise tickets | 457 | 540 | +18.2% |
-+
-+## Average first response (hours)
-+
-+| Segment | Apr | Jun | Sep |
-+|---|---|---|---|
-+| SMB first response | 6.1 | 9.8 | 13.9 |
-+| Mid-market first response | 4.2 | 5.0 | 5.1 |
-+| Enterprise first response | 2.0 | 2.4 | 2.3 |
-+
-+## Notes on the data
-+
-+- Source: data/q3_metrics.csv, monthly by segment, April to September.
-+- Not available: active customer base (so no churn *rate*), customer IDs, churn reasons.
-+- Every figure in this section is checked by deck/verify_deck.py.
-diff --git a/deck/customer_section_floor.pptx b/deck/customer_section_floor.pptx
-new file mode 100644
-index 0000000..9362254
-Binary files /dev/null and b/deck/customer_section_floor.pptx differ
-diff --git a/deck/verify_deck.py b/deck/verify_deck.py
-new file mode 100644
-index 0000000..bdb7826
---- /dev/null
-+++ b/deck/verify_deck.py
-@@ -0,0 +1,129 @@
-+"""Tie every number in a deck to a figure computed from data/q3_metrics.csv.
-+
-+Usage: python3 deck/verify_deck.py deck/customer_section.md [more.md ...]
-+Each number must match a figure for a segment and metric named on its own
-+line (e.g. "SMB churn"); a number on a line naming neither is untraced.
-+Percents must carry one decimal (54.6%, not 55%).
-+Exits 1 and lists each number that no CSV-derived figure explains.
++Usage: python3 qbr/build_customer_section.py
++Writes qbr/customer_section_q3.pptx. Check it with qbr/check_figures.py.
 +"""
 +import csv
-+import itertools
-+import re
-+import sys
 +from pathlib import Path
 +
-+CSV = Path(__file__).resolve().parent.parent / "data" / "q3_metrics.csv"
-+Q = {"Q2": ["2026-04", "2026-05", "2026-06"], "Q3": ["2026-07", "2026-08", "2026-09"]}
-+SUM_FIELDS = ["new_customers", "churned_customers", "support_tickets"]
-+FIELDS = SUM_FIELDS + ["mrr_usd", "nps", "avg_first_response_hours"]
++from pptx import Presentation
++from pptx.chart.data import CategoryChartData
++from pptx.dml.color import RGBColor
++from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION
++from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
++from pptx.util import Inches, Pt
++
++ROOT = Path(__file__).resolve().parent.parent
++OUT = ROOT / "qbr/customer_section_q3.pptx"
++
++rows = list(csv.DictReader(open(ROOT / "data/q3_metrics.csv")))
++months = sorted({r["month"] for r in rows})
++LABELS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"]
++SEGS = {"smb": "SMB", "mid_market": "Mid-market", "enterprise": "Enterprise"}
 +
 +
-+SEG_WORDS = {"smb": ["smb"], "mid_market": ["mid-market", "mid market"],
-+             "enterprise": ["enterprise"], "all": ["total", "all segments", "company"]}
-+FIELD_WORDS = {"new_customers": ["new", "logos", "signed", "won"],
-+               "churned_customers": ["churn", "lost"],
-+               "net_adds": ["net"],
-+               "mrr_usd": ["mrr", "revenue", "growth"],
-+               "nps": ["nps"],
-+               "support_tickets": ["ticket"],
-+               "avg_first_response_hours": ["response", "reply"]}
++def col(seg, c):
++    return [float(r[c]) for m in months for r in rows if r["month"] == m and r["segment"] == seg]
 +
 +
-+def figures():
-+    """Return {(segment, field): (counts, percents)}: what a line may cite."""
-+    rows = list(csv.DictReader(open(CSV)))
-+    segs = sorted({r["segment"] for r in rows})
-+    series = {}  # (segment, field) -> {period: value}
-+    for r in rows:
-+        r["net_adds"] = int(r["new_customers"]) - int(r["churned_customers"])
-+        for f in FIELDS + ["net_adds"]:
-+            series.setdefault((r["segment"], f), {})[r["month"]] = float(r[f])
-+    for seg in segs:
-+        for f in SUM_FIELDS + ["net_adds"]:
-+            s = series[(seg, f)]
-+            for q, months in Q.items():
-+                s[q] = sum(s[m] for m in months)
-+    total = {m: sum(series[(s, "mrr_usd")][m] for s in segs) for m in series[(segs[0], "mrr_usd")]}
-+    series[("all", "mrr_usd")] = total
++def q(seg, c, quarter):
++    s = col(seg, c)
++    return int(sum(s[:3] if quarter == 2 else s[3:]))
 +
-+    pools = {}
-+    for key, s in series.items():
-+        counts, pcts = set(), set()
-+        vals = list(s.values())
-+        counts.update(vals)
-+        for a, b in itertools.permutations(vals, 2):
-+            counts.add(b - a)
++
++def pct(a, b, d=0, sign=True):
++    return f"{(b - a) / a * 100:{'+' if sign else ''}.{d}f}%".replace("-", "−")
++
++
++def k(v):
++    return f"${v / 1000:,.1f}k"
++
++
++def n(v):
++    return f"{int(v):,}"
++
++
++# ---- facts, all derived from the CSV ----
++F = {}
++for s in SEGS:
++    F[s] = {
++        "new2": q(s, "new_customers", 2), "new3": q(s, "new_customers", 3),
++        "ch2": q(s, "churned_customers", 2), "ch3": q(s, "churned_customers", 3),
++        "mrr": col(s, "mrr_usd"), "nps": col(s, "nps"),
++        "frt": col(s, "avg_first_response_hours"), "tix": col(s, "support_tickets"),
++        "tix2": q(s, "support_tickets", 2), "tix3": q(s, "support_tickets", 3),
++    }
++    F[s]["net2"] = F[s]["new2"] - F[s]["ch2"]
++    F[s]["net3"] = F[s]["new3"] - F[s]["ch3"]
++smb, mid, ent = F["smb"], F["mid_market"], F["enterprise"]
++tot_jun = sum(F[s]["mrr"][2] for s in SEGS)
++tot_sep = sum(F[s]["mrr"][5] for s in SEGS)
++growth = tot_sep - tot_jun
++share_growth = {s: (F[s]["mrr"][5] - F[s]["mrr"][2]) / growth * 100 for s in SEGS}
++smb_share_sep = smb["mrr"][5] / tot_sep * 100
++smb_new, smb_ch = col("smb", "new_customers"), col("smb", "churned_customers")
++per100 = [c / w * 100 for c, w in zip(smb_ch, smb_new)]
++
++# ---- style ----
++INK = RGBColor(0x0B, 0x0B, 0x0B)
++INK2 = RGBColor(0x52, 0x51, 0x4E)
++MUTED = RGBColor(0x8A, 0x89, 0x84)
++RULE = RGBColor(0xE4, 0xE3, 0xDF)
++PANEL = RGBColor(0xF3, 0xF2, 0xEF)
++BLUE, ORANGE, AQUA = RGBColor(0x2A, 0x78, 0xD6), RGBColor(0xEB, 0x68, 0x34), RGBColor(0x1B, 0xAF, 0x7A)
++SEG_COLOR = {"smb": BLUE, "mid_market": ORANGE, "enterprise": AQUA}
++FONT = "Calibri"
++
++prs = Presentation()
++prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
++BLANK = prs.slide_layouts[6]
++
++
++def text(slide, x, y, w, h, content, size=16, color=INK, bold=False, align=PP_ALIGN.LEFT,
++         anchor=MSO_ANCHOR.TOP, spacing=1.1):
++    """content: str or list of str / (str, dict) paragraphs."""
++    tb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
++    tf = tb.text_frame
++    tf.word_wrap = True
++    tf.vertical_anchor = anchor
++    tf.margin_left = tf.margin_right = Inches(0.02)
++    paras = content if isinstance(content, list) else [content]
++    for i, p in enumerate(paras):
++        t, opt = (p, {}) if isinstance(p, str) else p
++        para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
++        para.alignment = opt.get("align", align)
++        para.line_spacing = spacing
++        para.space_after = Pt(opt.get("after", 6))
++        r = para.add_run()
++        r.text = t
++        r.font.name = FONT
++        r.font.size = Pt(opt.get("size", size))
++        r.font.bold = opt.get("bold", bold)
++        r.font.color.rgb = opt.get("color", color)
++    return tb
++
++
++def rect(slide, x, y, w, h, fill=PANEL):
++    s = slide.shapes.add_shape(1, Inches(x), Inches(y), Inches(w), Inches(h))
++    s.fill.solid()
++    s.fill.fore_color.rgb = fill
++    s.line.fill.background()
++    s.shadow.inherit = False
++    return s
++
++
++def slide_base(title, kicker="Customers · Q3 2026", notes=""):
++    s = prs.slides.add_slide(BLANK)
++    text(s, 0.6, 0.35, 12, 0.35, kicker.upper(), size=11, color=MUTED, bold=True)
++    text(s, 0.6, 0.65, 12.1, 1.1, title, size=28, bold=True, spacing=1.0)
++    line = s.shapes.add_connector(1, Inches(0.6), Inches(1.75), Inches(12.73), Inches(1.75))
++    line.line.color.rgb = RULE
++    line.line.width = Pt(1)
++    text(s, 0.6, 7.0, 12, 0.3, "Source: data/q3_metrics.csv (monthly, Apr–Sep)", size=10, color=MUTED)
++    if notes:
++        s.notes_slide.notes_text_frame.text = notes
++    return s
++
++
++def stat(slide, x, y, w, big, label, sub=None, color=INK):
++    text(slide, x, y, w, 0.7, big, size=34, bold=True, color=color)
++    text(slide, x, y + 0.72, w, 0.4, label, size=13, color=INK2)
++    if sub:
++        text(slide, x, y + 1.05, w, 0.4, sub, size=11, color=MUTED)
++
++
++def style_chart(chart, legend=True, fmt=None, minv=None, maxv=None):
++    chart.font.name = FONT
++    chart.font.size = Pt(12)
++    chart.font.color.rgb = INK2
++    chart.has_legend = legend
++    if legend:
++        chart.legend.position = XL_LEGEND_POSITION.TOP
++        chart.legend.include_in_layout = False
++        chart.legend.font.size = Pt(12)
++    va = chart.value_axis
++    va.has_major_gridlines = True
++    va.major_gridlines.format.line.color.rgb = RULE
++    va.format.line.fill.background()
++    va.tick_labels.font.size = Pt(11)
++    va.tick_labels.font.color.rgb = MUTED
++    if fmt:
++        va.tick_labels.number_format = fmt
++        va.tick_labels.number_format_is_linked = False
++    if minv is not None:
++        va.minimum_scale = minv
++    if maxv is not None:
++        va.maximum_scale = maxv
++    ca = chart.category_axis
++    ca.format.line.color.rgb = RULE
++    ca.tick_labels.font.size = Pt(12)
++    ca.tick_labels.font.color.rgb = INK2
++
++
++def line_chart(slide, x, y, w, h, series, fmt=None, legend=True, minv=None, maxv=None, label_fmt=None):
++    cd = CategoryChartData()
++    cd.categories = LABELS
++    for name, vals, _ in series:
++        cd.add_series(name, vals)
++    gf = slide.shapes.add_chart(XL_CHART_TYPE.LINE_MARKERS, Inches(x), Inches(y), Inches(w), Inches(h), cd)
++    ch = gf.chart
++    ch.has_title = False
++    style_chart(ch, legend, fmt, minv, maxv)
++    for s, (_, _, color) in zip(ch.plots[0].series, series):
++        s.smooth = False
++        s.format.line.color.rgb = color
++        s.format.line.width = Pt(2.25)
++        s.marker.style = 8  # circle
++        s.marker.size = 8
++        s.marker.format.fill.solid()
++        s.marker.format.fill.fore_color.rgb = color
++        s.marker.format.line.color.rgb = RGBColor(0xFC, 0xFC, 0xFB)
++        if label_fmt:  # label first and last points only
++            for i in (0, len(LABELS) - 1):
++                dl = s.points[i].data_label
++                dl.has_text_frame = False
++                dl.number_format = label_fmt
++                dl.number_format_is_linked = False
++                dl.position = XL_LABEL_POSITION.ABOVE
++                dl.font.size = Pt(11)
++                dl.font.color.rgb = INK2
++                dl.show_value = True
++    return ch
++
++
++# ---------- 1. Title ----------
++s = prs.slides.add_slide(BLANK)
++rect(s, 0, 0, 13.333, 7.5, fill=RGBColor(0x14, 0x24, 0x3B))
++text(s, 0.9, 2.2, 11, 0.4, "ACME QUARTERLY BUSINESS REVIEW · Q3 2026", size=14, bold=True,
++     color=RGBColor(0x9E, 0xC5, 0xF4))
++text(s, 0.9, 2.7, 11.5, 1.2, "Customers: SMB sign-ups rose, net adds did not", size=40, bold=True, color=RGBColor(0xFF, 0xFF, 0xFF))
++text(s, 0.9, 3.9, 11.5, 1.2,
++     f"SMB sign-ups and losses both rose by {smb['new3'] - smb['new2']} in Q3, so net adds stayed flat; two calls for the room today.",
++     size=22, color=RGBColor(0xDD, 0xE6, 0xF2), spacing=1.15)
++s.notes_slide.notes_text_frame.text = (
++    "Section in one line: SMB growth stalled while sign-ups hit a high; mid-market and enterprise "
++    "carried revenue growth. We need two decisions: SMB support capacity and SMB acquisition pace.")
++
++# ---------- 2. Scorecard ----------
++s = slide_base(f"Enterprise drove growth; SMB signed {pct(smb['new2'], smb['new3'], sign=False)} more customers and added no more net",
++               notes="Net adds = new customers minus churned customers. Q2 figures in brackets. "
++                     "Monthly values are September; first response and NPS change shown from April.")
++hdr = ["", "New logos", "Churned", "Net adds", "MRR, Sep", "NPS, Sep", "First response, Sep"]
++tbl_rows = []
++for key, name in SEGS.items():
++    f = F[key]
++    tbl_rows.append([
++        name,
++        f"{n(f['new3'])}  (Q2 {n(f['new2'])})",
++        f"{n(f['ch3'])}  (Q2 {n(f['ch2'])})",
++        f"{n(f['net3'])}  (Q2 {n(f['net2'])})",
++        f"{k(f['mrr'][5])}  ({pct(f['mrr'][2], f['mrr'][5], 1)})",
++        f"{int(f['nps'][5])}  (Apr {int(f['nps'][0])})",
++        f"{f['frt'][5]:.1f} h  (Apr {f['frt'][0]:.1f} h)",
++    ])
++gt = s.shapes.add_table(4, 7, Inches(0.6), Inches(2.1), Inches(12.13), Inches(2.6))
++t = gt.table
++widths = [1.6, 1.8, 1.7, 1.7, 1.9, 1.5, 1.93]
++for i, w in enumerate(widths):
++    t.columns[i].width = Inches(w)
++for r, vals in enumerate([hdr] + tbl_rows):
++    for c, v in enumerate(vals):
++        cell = t.cell(r, c)
++        cell.fill.solid()
++        cell.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF) if r else PANEL
++        cell.vertical_anchor = MSO_ANCHOR.MIDDLE
++        p = cell.text_frame.paragraphs[0]
++        p.alignment = PP_ALIGN.LEFT
++        f = p.add_run().font
++        p.runs[0].text = v
++        f.name = FONT
++        f.size = Pt(13 if r else 12)
++        f.bold = (r == 0 or c == 0)
++        f.color.rgb = INK2 if r == 0 else INK
++        if r == 1 and c in (2, 5, 6):
++            f.color.rgb = RGBColor(0xC2, 0x3B, 0x22)
++            f.bold = True
++text(s, 0.6, 5.0, 12, 1.6, [
++    (f"SMB churned {n(smb['ch3'])} customers in Q3, up from {n(smb['ch2'])}, and its September "
++     f"first response time was {smb['frt'][5]:.1f} h, against {mid['frt'][5]:.1f} h in mid-market.", {}),
++    (f"Total MRR grew from {k(tot_jun)} in June to {k(tot_sep)} in September "
++     f"({pct(tot_jun, tot_sep, 1)}).", {}),
++], size=16, color=INK2)
++
++# ---------- 3. SMB logo bridge ----------
++s = slide_base(f"SMB signed {smb['new3'] - smb['new2']} more customers than in Q2 and lost "
++               f"{smb['ch3'] - smb['ch2']} more, so net growth stayed at {smb['net3']}",
++               notes="Sales is right that SMB sign-ups are at a high (September is the highest month in the data). "
++                     "Losses rose faster than sign-ups, so net adds did not move. We cannot state a churn rate: "
++                     "the data has no count of total SMB customers.")
++cd = CategoryChartData()
++cd.categories = LABELS
++cd.add_series("New SMB customers", smb_new)
++cd.add_series("Churned SMB customers", smb_ch)
++gf = s.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(0.5), Inches(2.0), Inches(7.6), Inches(4.8), cd)
++ch = gf.chart
++style_chart(ch, legend=True, minv=0)
++ch.plots[0].gap_width = 60
++ch.plots[0].overlap = -8
++for ser, color in zip(ch.plots[0].series, (BLUE, ORANGE)):
++    ser.format.fill.solid()
++    ser.format.fill.fore_color.rgb = color
++    ser.data_labels.show_value = True
++    ser.data_labels.font.size = Pt(11)
++    ser.data_labels.font.color.rgb = INK2
++    ser.data_labels.position = XL_LABEL_POSITION.OUTSIDE_END
++rect(s, 8.5, 2.0, 4.23, 4.8)
++text(s, 8.8, 2.2, 3.7, 0.4, "SMB customer bridge", size=13, bold=True, color=INK2)
++bridge = [("", "Q2", "Q3"),
++          ("New", n(smb["new2"]), n(smb["new3"])),
++          ("Churned", f"−{n(smb['ch2'])}", f"−{n(smb['ch3'])}"),
++          ("Net adds", n(smb["net2"]), n(smb["net3"]))]
++for i, (a, b, c) in enumerate(bridge):
++    yy = 2.65 + i * 0.5
++    bold = i in (0, 3)
++    text(s, 8.8, yy, 1.5, 0.4, a, size=15, bold=bold, color=INK2 if i == 0 else INK)
++    text(s, 10.3, yy, 1.0, 0.4, b, size=15, bold=bold, align=PP_ALIGN.RIGHT, color=INK2 if i == 0 else INK)
++    text(s, 11.4, yy, 1.0, 0.4, c, size=15, bold=bold, align=PP_ALIGN.RIGHT, color=INK2 if i == 0 else INK)
++ln = s.shapes.add_connector(1, Inches(8.8), Inches(4.13), Inches(12.4), Inches(4.13))
++ln.line.color.rgb = MUTED
++text(s, 8.8, 4.45, 3.7, 2.2, [
++    (f"In April SMB lost {per100[0]:.0f} customers for every 100 it signed. "
++     f"In September it lost {per100[5]:.0f}.", {}),
++    ("The data has no total customer count, so this is not a churn rate.", {"color": MUTED, "size": 12}),
++], size=14, color=INK)
++
++# ---------- 4. SMB support ----------
++s = slide_base(f"SMB support slowed every month from April to September, while NPS and losses moved the wrong way",
++               notes="All three SMB series moved in one direction every month for six months: first response up, "
++                     "NPS down, churned customers up. Six points cannot show cause. Exit reasons are not in this data.")
++line_chart(s, 0.5, 2.0, 4.2, 3.6, [("SMB first response (hours)", smb["frt"], BLUE)],
++           legend=False, minv=0, label_fmt='0.0" h"')
++text(s, 0.6, 1.9, 4, 0.35, "First response time, hours", size=13, bold=True, color=INK2)
++line_chart(s, 4.75, 2.0, 4.2, 3.6, [("SMB NPS", smb["nps"], BLUE)], legend=False, minv=0, maxv=50,
++           label_fmt="0")
++text(s, 4.85, 1.9, 4, 0.35, "NPS", size=13, bold=True, color=INK2)
++line_chart(s, 9.0, 2.0, 4.0, 3.6, [("SMB tickets", smb["tix"], BLUE)], legend=False, minv=0,
++           fmt="#,##0", label_fmt="#,##0")
++text(s, 9.1, 1.9, 4, 0.35, "Support tickets per month", size=13, bold=True, color=INK2)
++rect(s, 0.6, 5.8, 12.13, 1.05)
++text(s, 0.85, 5.88, 11.7, 0.95, [
++    (f"Tickets rose {pct(smb['tix'][0], smb['tix'][5], sign=False)} from April to September; "
++     f"the first reply now takes {smb['frt'][5] / smb['frt'][0]:.1f}× as long.", {"bold": True, "color": INK}),
++    ("This is a pattern, not proof. Six months of data cannot separate support from price, product "
++     "fit or the mix of customers being signed.", {"color": INK2, "size": 13}),
++], size=15, anchor=MSO_ANCHOR.MIDDLE)
++
++# ---------- 5. MRR ----------
++s = slide_base(f"Enterprise delivered {share_growth['enterprise']:.0f}% of MRR growth since June; "
++               f"SMB delivered {share_growth['smb']:.0f}%",
++               notes="MRR growth June to September by segment. SMB is about a fifth of MRR. "
++                     "Enterprise sign-ups are small numbers, so one or two deals can swing a quarter.")
++line_chart(s, 0.5, 2.0, 8.2, 4.8,
++           [(SEGS[x], F[x]["mrr"], SEG_COLOR[x]) for x in ("enterprise", "mid_market", "smb")],
++           fmt='$#,##0,"k"', minv=0)
++for i, x in enumerate(("enterprise", "mid_market", "smb")):
++    f = F[x]
++    yy = 2.0 + i * 1.6
++    stat(s, 9.2, yy, 3.6, pct(f["mrr"][2], f["mrr"][5], 1),
++         f"{SEGS[x]} MRR, June to September",
++         f"{k(f['mrr'][2])} → {k(f['mrr'][5])}", color=INK)
++
++# ---------- 6. Mid-market & enterprise ----------
++s = slide_base("Mid-market and enterprise lost less ground than SMB on service and NPS; mid-market net adds were flat too",
++               notes="Mid-market added the same net number of customers in Q2 and Q3. Its losses rose a little "
++                     "and its response time drifted up less than an hour. Enterprise lost one customer in each quarter.")
++for i, x in enumerate(("mid_market", "enterprise")):
++    f = F[x]
++    x0 = 0.6 + i * 6.25
++    rect(s, x0, 2.0, 5.88, 3.95)
++    text(s, x0 + 0.3, 2.15, 5, 0.5, SEGS[x], size=20, bold=True)
++    stat(s, x0 + 0.3, 2.75, 2.6, f"{f['frt'][5]:.1f} h", "first response, Sep",
++         f"April: {f['frt'][0]:.1f} h")
++    stat(s, x0 + 3.1, 2.75, 2.6, f"{int(f['nps'][5])}", "NPS, Sep", f"April: {int(f['nps'][0])}")
++    stat(s, x0 + 0.3, 4.35, 2.6, n(f["net3"]), "net adds, Q3", f"Q2: {n(f['net2'])}")
++    stat(s, x0 + 3.1, 4.35, 2.6, n(f["ch3"]), "churned, Q3", f"Q2: {n(f['ch2'])}")
++
++# ---------- 7. Call 1 ----------
++
++
++def call_slide(num, question, for_pts, against_pts, ask, notes):
++    s = slide_base(question, kicker=f"Decision for the room · Call {num}", notes=notes)
++    for i, (head, pts, color) in enumerate((("For", for_pts, AQUA), ("Against", against_pts, ORANGE))):
++        x0 = 0.6 + i * 6.25
++        bar = rect(s, x0, 2.0, 0.08, 3.9, fill=color)
++        text(s, x0 + 0.3, 1.95, 5.5, 0.5, head, size=20, bold=True)
++        text(s, x0 + 0.3, 2.55, 5.5, 3.4, [("•  " + p, {"after": 12}) for p in pts], size=15, color=INK)
++    rect(s, 0.6, 6.05, 12.13, 0.8)
++    text(s, 0.85, 6.05, 11.7, 0.8, ask, size=15, bold=True, anchor=MSO_ANCHOR.MIDDLE)
++
++
++call_slide(
++    1, "The room should decide whether to fund SMB support back to April response times",
++    [f"First response rose every month, {smb['frt'][0]:.1f} h → {smb['frt'][5]:.1f} h. NPS fell every month, "
++     f"{int(smb['nps'][0])} → {int(smb['nps'][5])}.",
++     f"Customers lost rose every month too, {n(smb_ch[0])} → {n(smb_ch[5])}.",
++     f"SMB tickets grew {pct(smb['tix2'], smb['tix3'], sign=False)} quarter on quarter, faster than SMB sign-ups "
++     f"({pct(smb['new2'], smb['new3'])}). If that continues, the queue grows unless capacity does.",
++     ],
++    ["Six months move together, but that does not prove slow support causes the losses. "
++     "Price, product fit or the type of customer being signed could explain them.",
++     f"SMB is {smb_share_sep:.0f}% of MRR and grew {pct(smb['mrr'][2], smb['mrr'][5], 1, sign=False)} in Q3. "
++     f"Money spent here is not spent on enterprise, which delivered {share_growth['enterprise']:.0f}% of MRR growth since June.",
++     "We have no exit reasons and no total customer count, so we cannot size the payoff yet."],
++    "Ask: a yes or no, an owner, and whether to start with a time-boxed test on part of the SMB queue.",
++    notes="Recommendation to discuss: a time-boxed test (faster queue for part of SMB) answers the causation "
++          "question cheaply before a full commitment. Track SMB first response and losses per 100 sign-ups monthly.")
++
++call_slide(
++    2, "The room should decide whether SMB acquisition keeps its Q3 pace while losses rise",
++    [f"Sales signed more SMB customers in Q3 than in Q2, with {n(smb_new[5])} in September, the highest of the six months.",
++     f"Net adds held at {n(smb['net3'])} a quarter, and SMB MRR still rose, {k(smb['mrr'][2])} → {k(smb['mrr'][5])}.",
++     "Slowing sign-ups cuts new logos now, while any retention gain is still unproven."],
++    [f"The extra {smb['new3'] - smb['new2']} sign-ups in Q3 produced no extra net growth.",
++     f"For every 100 sign-ups SMB now loses {per100[5]:.0f}, up from {per100[0]:.0f} in April (not a churn rate).",
++     f"Every new SMB customer adds to a support queue already at {smb['frt'][5]:.1f} h for a first reply."],
++    "Ask: keep the pace, hold it flat until support recovers, or shift effort to mid-market and enterprise.",
++    notes="This call depends on Call 1. If support is funded, keeping the pace is easier to defend. "
++          "Losses per 100 sign-ups is the simplest number to watch until we have a true churn rate.")
++
++prs.save(OUT)
++print(f"wrote {OUT.relative_to(ROOT)} ({len(prs.slides)} slides)")
+diff --git a/qbr/check_figures.py b/qbr/check_figures.py
+new file mode 100644
+index 0000000..5961bae
+--- /dev/null
++++ b/qbr/check_figures.py
+@@ -0,0 +1,134 @@
++"""Recompute every number shown in the customer-section deck from the raw CSV.
++
++Usage: python3 qbr/check_figures.py [deck.pptx] [metrics.csv]
++
++Each number in slide text, tables and notes must equal, at the precision
++shown, a value derived here straight from the CSV rows: a raw cell, a
++quarter sum, a quarter-over-quarter difference, a percent change, a ratio,
++or a "per 100" rate. Chart series must equal a CSV column exactly.
++Exits 1 on any mismatch.
++"""
++import csv
++import re
++import sys
++from itertools import combinations
++from pathlib import Path
++
++from pptx import Presentation
++
++ROOT = Path(__file__).resolve().parent.parent
++deck_path = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "qbr/customer_section_q3.pptx"
++csv_path = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "data/q3_metrics.csv"
++
++rows = list(csv.DictReader(open(csv_path)))
++METRICS = [c for c in rows[0] if c not in ("month", "segment")]
++months = sorted({r["month"] for r in rows})
++segments = sorted({r["segment"] for r in rows})
++Q2, Q3 = months[:3], months[3:]
++
++
++def series(seg, col):
++    return [float(r[col]) for m in months for r in rows if r["month"] == m and r["segment"] == seg]
++
++
++# ---- allowed values, derived independently of the deck builder ----
++plain, pct, ratio = set(), set(), set()
++plain.add(len(months))
++for seg in segments + ["all"]:
++    segs = segments if seg == "all" else [seg]
++    for col in METRICS:
++        s = [sum(x) for x in zip(*(series(g, col) for g in segs))]
++        plain.update(s)
++        q2, q3 = s[:3], s[3:]
++        sums = {"q2": sum(q2), "q3": sum(q3)}
++        plain.update(sums.values())
++        pairs = [(sums["q2"], sums["q3"]), (s[0], s[-1]), (s[2], s[5])]
++        for a, b in pairs:
++            plain.add(abs(b - a))
 +            if a:
-+                pcts.add(100 * (b - a) / a)
-+        pools[key] = (counts, pcts)
-+    growth = total["2026-09"] - total["2026-06"]
-+    for seg in segs:
-+        s = series[(seg, "mrr_usd")]
-+        pools[(seg, "mrr_usd")][1].add(100 * (s["2026-09"] - s["2026-06"]) / growth)
-+        pools[(seg, "mrr_usd")][1].add(100 * s["2026-09"] / total["2026-09"])
-+        n, c = series[(seg, "new_customers")], series[(seg, "churned_customers")]
-+        for p in n:
-+            if n[p]:
-+                pools[(seg, "churned_customers")][1].add(100 * c[p] / n[p])
-+    return pools
++                pct.add(abs(b - a) / a * 100)
++                ratio.add(b / a)
++    new = [sum(x) for x in zip(*(series(g, "new_customers") for g in segs))]
++    churn = [sum(x) for x in zip(*(series(g, "churned_customers") for g in segs))]
++    net = [n - c for n, c in zip(new, churn)]
++    plain.update(net)
++    plain.update([sum(net[:3]), sum(net[3:])])
++    for n, c in list(zip(new, churn)) + [(sum(new[:3]), sum(churn[:3])), (sum(new[3:]), sum(churn[3:]))]:
++        if n:
++            plain.add(c / n * 100)  # churned per 100 new
++    tix = [sum(x) for x in zip(*(series(g, "support_tickets") for g in segs))]
++    plain.update([sum(tix[:3]) / 3, sum(tix[3:]) / 3])
++# share of total MRR by segment, first and last month
++for i in (0, 2, 5):
++    tot = sum(series(g, "mrr_usd")[i] for g in segments)
++    for g in segments:
++        pct.add(series(g, "mrr_usd")[i] / tot * 100)
++# share of Q2->Q3-end MRR growth by segment
++tot_growth = sum(series(g, "mrr_usd")[5] - series(g, "mrr_usd")[2] for g in segments)
++for g in segments:
++    pct.add((series(g, "mrr_usd")[5] - series(g, "mrr_usd")[2]) / tot_growth * 100)
++
++# Labels, not figures: years, quarter names, call numbers, month counts in words.
++EXEMPT = re.compile(r"\b(?:20\d\d|Q[1-4]|Call\s+\d)\b")
++NUM = re.compile(r"(\$)?([+\-−]?\d[\d,]*(?:\.\d+)?)\s*(k|K|M|%|×|x\b| ?h\b| pts?\b)?")
 +
 +
-+def context(line, pools):
-+    """Pools for the segments and metrics this line names; None if it names neither."""
-+    low = line.lower()
-+    segs = [k for k, ws in SEG_WORDS.items() if any(w in low for w in ws)]
-+    flds = [k for k, ws in FIELD_WORDS.items() if any(w in low for w in ws)]
-+    if not segs or not flds:
-+        return None
-+    counts, pcts = set(), set()
-+    for k in itertools.product(segs, flds):
-+        if k in pools:
-+            counts |= pools[k][0]
-+            pcts |= pools[k][1]
-+    return counts, pcts
++def matches(token_val, decimals, pool, scale=1.0):
++    return any(round(abs(v) / scale, decimals) == token_val for v in pool)
 +
 +
-+NUM = re.compile(r"(?<![\w.])([+\-−]?)\$?(\d[\d,]*(?:\.\d+)?)(k|%)?")
-+SKIP = re.compile(r"\b20\d\d-\d\d\b|\b20\d\d\b|\bQ[1-4]\b|^#+ |^---$|<!--.*?-->")
++def check_text(text, where, problems, count):
++    clean = EXEMPT.sub(" ", text)
++    for m in NUM.finditer(clean):
++        dollar, raw, unit = m.group(1), m.group(2), (m.group(3) or "").strip()
++        val_s = raw.replace(",", "").lstrip("+-−")
++        decimals = len(val_s.split(".")[1]) if "." in val_s else 0
++        val = round(float(val_s), decimals)
++        if unit == "%":
++            ok = matches(val, decimals, pct)
++        elif unit in ("×", "x"):
++            ok = matches(val, decimals, ratio)
++        elif unit in ("k", "K"):
++            ok = matches(val, decimals, plain, 1000)
++        elif unit == "M":
++            ok = matches(val, decimals, plain, 1_000_000)
++        else:
++            ok = matches(val, decimals, plain)
++        count[0] += 1
++        if not ok:
++            problems.append(f"{where}: '{m.group(0).strip()}' not derivable from CSV")
 +
 +
-+def matches(value, decimals, pool):
-+    return any(round(abs(c), decimals) == value for c in pool)
++if not deck_path.exists():
++    print(f"FAIL: deck not found at {deck_path}")
++    sys.exit(1)
 +
++columns = {(g, c): series(g, c) for g in segments for c in METRICS}
++month_labels = set(months)
++problems, count, charts = [], [0], 0
++prs = Presentation(deck_path)
++for i, slide in enumerate(prs.slides, 1):
++    texts = []
++    for shape in slide.shapes:
++        if shape.has_text_frame:
++            texts.append(shape.text_frame.text)
++        if shape.has_table:
++            texts += [c.text for r in shape.table.rows for c in r.cells]
++        if shape.has_chart:
++            charts += 1
++            plot = shape.chart.plots[0]
++            for s in plot.series:
++                vals = [float(v) for v in s.values]
++                if vals not in columns.values():
++                    problems.append(f"slide {i} chart series '{s.name}' != any CSV column")
++    if slide.has_notes_slide:
++        texts.append(slide.notes_slide.notes_text_frame.text)
++    for t in texts:
++        check_text(t, f"slide {i}", problems, count)
 +
-+def check(path, pools):
-+    bad, n = [], 0
-+    for i, line in enumerate(Path(path).read_text().splitlines(), 1):
-+        if line.strip() in ("---",) or line.startswith("% "):
-+            continue
-+        text = SKIP.sub(" ", line)
-+        ctx = context(line, pools) or (set(), set())
-+        counts, pcts = ctx
-+        for m in NUM.finditer(text):
-+            raw, suffix = m.group(2).replace(",", ""), m.group(3)
-+            value = float(raw)
-+            decimals = len(raw.split(".")[1]) if "." in raw else 0
-+            n += 1
-+            if suffix == "%":
-+                # whole-number percents match too many pairs by luck; require 1 dp
-+                ok = decimals >= 1 and matches(value, decimals, pcts)
-+            elif suffix == "k":
-+                ok = matches(value, decimals, {c / 1000 for c in counts})
-+            else:
-+                ok = matches(value, decimals, counts)
-+            if not ok:
-+                bad.append(f"{path}:{i}: {m.group(0).strip()}  | {line.strip()[:70]}")
-+    return n, bad
-+
-+
-+if __name__ == "__main__":
-+    pools = figures()
-+    total_n, total_bad = 0, []
-+    for p in sys.argv[1:]:
-+        n, bad = check(p, pools)
-+        total_n += n
-+        total_bad += bad
-+    for b in total_bad:
-+        print("UNTRACED", b)
-+    print(f"{total_n - len(total_bad)}/{total_n} figures traced, {len(total_bad)} untraced")
-+    sys.exit(1 if total_bad or not total_n else 0)
++for p in problems:
++    print(p)
++status = "PASS" if not problems else "FAIL"
++print(f"{status}: {count[0]} numbers and {charts} charts checked across "
++      f"{len(prs.slides)} slides, {len(problems)} mismatches")
++sys.exit(1 if problems else 0)
+diff --git a/qbr/customer_section_q3.pptx b/qbr/customer_section_q3.pptx
+new file mode 100644
+index 0000000..b4aaa26
+Binary files /dev/null and b/qbr/customer_section_q3.pptx differ

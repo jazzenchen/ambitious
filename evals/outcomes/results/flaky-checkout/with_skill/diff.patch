@@ -1,8 +1,8 @@
 diff --git a/src/checkout.js b/src/checkout.js
-index 61f7205..84da823 100644
+index 61f7205..9bc823b 100644
 --- a/src/checkout.js
 +++ b/src/checkout.js
-@@ -1,10 +1,16 @@
+@@ -1,10 +1,17 @@
 -import { reserve } from "./inventory.js";
 +import { reserve, release } from "./inventory.js";
  
@@ -18,22 +18,23 @@ index 61f7205..84da823 100644
 +  );
 +  const failed = results.find((r) => r.status === "rejected");
 +  if (failed) {
-+    // All or nothing: give back any stock this order did manage to hold.
-+    const held = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
-+    await Promise.all(held.map((r) => release(r.sku, r.qty)));
++    // Give back whatever we did manage to hold before failing the order.
++    for (const r of results) {
++      if (r.status === "fulfilled") release(r.value.sku, r.value.qty);
++    }
 +    throw failed.reason;
 +  }
 +  return { orderId: `ord_${cart.id}`, reservations: results.map((r) => r.value) };
  }
 diff --git a/src/inventory.js b/src/inventory.js
-index 3413d03..cbd58d9 100644
+index 3413d03..942dbd0 100644
 --- a/src/inventory.js
 +++ b/src/inventory.js
 @@ -9,6 +9,10 @@ export async function reserve(sku, qty) {
    return { sku, qty, reservedAt: Date.now() };
  }
  
-+export async function release(sku, qty) {
++export function release(sku, qty) {
 +  stock.set(sku, (stock.get(sku) ?? 0) + qty);
 +}
 +
@@ -41,17 +42,10 @@ index 3413d03..cbd58d9 100644
    stock.set("sku-red-mug", 3);
    stock.set("sku-blue-mug", 0);
 diff --git a/test/checkout.test.js b/test/checkout.test.js
-index 014000e..edfb0c7 100644
+index 014000e..382a641 100644
 --- a/test/checkout.test.js
 +++ b/test/checkout.test.js
-@@ -1,12 +1,24 @@
- import { test, beforeEach } from "node:test";
- import assert from "node:assert/strict";
- import { checkout } from "../src/checkout.js";
--import { _reset } from "../src/inventory.js";
-+import { _reset, reserve } from "../src/inventory.js";
- 
- beforeEach(() => _reset());
+@@ -7,6 +7,20 @@ beforeEach(() => _reset());
  
  test("checkout reserves every item", async () => {
    const order = await checkout({ id: 1, items: [{ sku: "sku-red-mug", qty: 1 }] });
@@ -66,38 +60,10 @@ index 014000e..edfb0c7 100644
 +  );
 +});
 +
-+test("a failed checkout releases the stock it held", async () => {
-+  const items = [{ sku: "sku-red-mug", qty: 1 }, { sku: "sku-blue-mug", qty: 1 }];
-+  await assert.rejects(checkout({ id: 3, items }), /out of stock/);
-+  await reserve("sku-red-mug", 3); // all 3 red mugs must still be available
-+});
-diff --git a/test/no-async-foreach.test.js b/test/no-async-foreach.test.js
-new file mode 100644
-index 0000000..8f4e053
---- /dev/null
-+++ b/test/no-async-foreach.test.js
-@@ -0,0 +1,24 @@
-+import { test } from "node:test";
-+import assert from "node:assert/strict";
-+import { readdirSync, readFileSync } from "node:fs";
-+import path from "node:path";
-+
-+// forEach ignores the promises an async callback returns, so the caller moves on
-+// before the work finishes and any rejection goes unhandled (see SHOP-412).
-+const ASYNC_FOREACH = /\.forEach\(\s*async\b/;
-+
-+function sourceFiles(dir) {
-+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
-+    const p = path.join(dir, e.name);
-+    if (e.isDirectory()) return sourceFiles(p);
-+    return /\.[cm]?js$/.test(e.name) ? [p] : [];
-+  });
-+}
-+
-+test("src/ never passes an async callback to forEach", () => {
-+  const hits = sourceFiles(process.env.ASYNC_CHECK_DIR ?? "src").flatMap((file) =>
-+    readFileSync(file, "utf8").split("\n").flatMap((line, i) =>
-+      ASYNC_FOREACH.test(line) ? [`${file}:${i + 1}`] : []),
++test("failed checkout releases the items it already reserved", async () => {
++  await assert.rejects(
++    checkout({ id: 3, items: [{ sku: "sku-red-mug", qty: 2 }, { sku: "sku-blue-mug", qty: 1 }] }),
 +  );
-+  assert.deepEqual(hits, [], "use `await Promise.all(items.map(...))` instead");
++  const order = await checkout({ id: 4, items: [{ sku: "sku-red-mug", qty: 3 }] });
++  assert.equal(order.reservations[0].qty, 3);
 +});

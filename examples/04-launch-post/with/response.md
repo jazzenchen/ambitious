@@ -1,34 +1,33 @@
-I wrote the launch post at `blog/tidepool-v1.0-launch.md`. Every factual claim in it now traces back to your README, but it isn't publishable until you fill 11 `[TK]` placeholders that only you can answer.
+The post is at `blog/tidepool-v1.0.md`. A separate check, run by a fresh model that saw only the post and the README, found **0 of 15** claims without a source in the README. Three readers who saw only the post all came away knowing what it is, who it's for and why it's different, but those reads were done one revision before the final text.
 
 ```text
 ── /ambitious · result ─────────────────────────────────────────────
-floor    ✓ post, 0 unsourced claims · blog/tidepool-v1.0-launch.md
-rung 1   ✓ 2 cold reads drove 3 revisions; scores 1→1→2→0 unmatched
-target   real readers: not measured (proxy cold read 4/5 → 5/5)     ✗
-judge    claims_check.py → unmatched: 0 of 10 claims (TK-flagged: 3)
-doubt    "nothing leaves your house" → untested · now a TK'd goal
-untested final draft never cold-read; dedup/Pi-speed claims only TK'd
-files    + blog/tidepool-v1.0-launch.md · no deps · judge in scratch
-cost     4 claim extractions + 2 cold reads vs ~3 est. · ~$1.20
-next     fill the 11 TKs, then send rubric.md to 5 r/selfhosted users
+floor    ✓ finished launch post · blog/tidepool-v1.0.md (uncommitted)
+rung 1   ✓ cold-read tested, revised 4× against the claims check
+target   0 unsourced claims, 3/3 cold reads (was 10 of 21)         ✓
+judge    claims_check.py claims_v5.json README.md
+         → unmatched 0 of 15 claims
+judge    coldread_score.py answers_v2.json → cold reads passed 3 of 3
+doubt    "README is enough to post from" → held, barely · 3/3 readers
+         stopped at: no install link, no screenshots, no Pi specs
+untested final text not cold-read (v3–v5 only removed claims);
+         readers were model proxies, not real r/selfhosted users
+files    + blog/tidepool-v1.0.md · judge files in scratchpad only
+cost     9 subagent runs vs ~5 est. · ~25 min · tokens not visible
+next     send install link + beta feedback → rung 2 (users' words)
 ────────────────────────────────────────────────────────────────────
 ```
 
-**How it was checked:** a separate reader that saw only the post and the README listed every factual claim and the README line backing it. A script then confirmed each backing line really is in the README. Before using it, I tested the check on a fake "10,000 photos in 4 minutes" claim, and it caught it.
+**What the checks showed:**
+- **My first draft failed the claims check.** 10 of its 21 claims weren't in the README, including "find every picture of your kid in 30 seconds" and things the beta testers supposedly did. I cut all of them instead of changing the check to let them pass.
+- **The check can fail.** On a copy where I added a fake benchmark ("10,000 photos in under 4 minutes"), it flagged that claim.
+- **One flag was the checker being inconsistent, not the post.** In the fourth run it flagged "face recognition runs on your own machine", a line earlier runs had accepted. I changed the post to use the README's own wording rather than loosen the check.
+- **The cost:** the dedup line is now one bare sentence, because each example I tried claimed more than the README says.
 
-**What the revisions changed:**
-- **"Nothing leaves your house"** is now stated as a design goal. A placeholder asks you to list every outbound connection (update checks, map tiles, model downloads) before you publish. The first cold reader picked this as the claim a commenter would test with a packet capture and attack.
-- **Backups and export:** the first cold reader said the post never explains how to back up the library or get your photos out. I added a section for that. You have to write its content, because nothing in the project describes it.
-- **Pi speed and dedup:** the second cold reader's most likely attack was how long the first face scan takes on a Pi. The other was whether dedup catches resized copies, like a photo forwarded through a chat app. Both are now placeholders asking for real measurements and details.
-- **Opener:** I cut "Every family has the same mess" and the "four copies become one" image because the README backs neither. The opener is now a question. That cost the line both cold readers liked best.
+**To confirm before Tuesday.** I left these out of the post rather than guess them:
+- **An install or download link and a repo URL.** All three readers stopped here. Add it to "Try it".
+- **The launch date.** The post says "v1.0 ships" with no date.
+- **Hardware requirements** beyond "a Raspberry Pi", and how photos get from phones to Tidepool. The skeptical reader asked about both, and also about Immich, backups and the license.
+- **A beta-user quote or a measured import time.** Either would give the post the proof it currently lacks. That's rung 2.
 
-**What fell short:**
-- **No real readers yet:** your target was 4 of 5 people naming what Tidepool is for and why it's private within 30 seconds. That needs people, so I haven't measured it. The 5/5 score came from a model reading the post, which is weaker evidence.
-- **Final draft not re-read:** the cold-read scores are for drafts 1 and 2. The final draft only changed the opener and added placeholders, and I didn't get a new cold read on it.
-- **Release date:** the README says v1.0 ships "next Tuesday" without a date, so I left the date as a placeholder.
-
-To finish it, fill the placeholders (the code audit for outbound connections matters most), then send the 5-question reader rubric to a few r/selfhosted users. The rubric and the check script are throwaway files, so they're in the scratchpad (`<scratchpad>/judge/`):
-- `rubric.md` is the reader rubric.
-- `claims_check.py` is the check script.
-
-Nothing was committed.
+The judge scripts, rubric and reader answers are in `<scratchpad>/judge/`. Nothing has been committed.

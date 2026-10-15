@@ -1,23 +1,22 @@
 import { useOrders } from "./useOrders";
-import { toCsv, downloadCsv } from "./toCsv";
+import { downloadCsv, toCsv } from "./exportCsv";
 
 export function Dashboard() {
   const { orders } = useOrders();
-  const exportCsv = () =>
-    downloadCsv(
-      "orders.csv",
-      toCsv(orders, [
-        { header: "ID", value: (o) => o.id },
-        { header: "Customer", value: (o) => o.customer },
-        { header: "Total", value: (o) => o.total },
-        { header: "Status", value: (o) => o.status },
-      ]),
-    );
+  const exportCsv = () => {
+    const csv = toCsv(orders, [
+      { key: "id", header: "ID" },
+      { key: "customer", header: "Customer" },
+      { key: "total", header: "Total" },
+      { key: "status", header: "Status" },
+    ]);
+    downloadCsv(`orders-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  };
   return (
     <section>
       <h1>Orders</h1>
       <button type="button" onClick={exportCsv} disabled={orders.length === 0}>
-        Download CSV
+        Export CSV
       </button>
       <table>
         <thead><tr><th>ID</th><th>Customer</th><th>Total</th><th>Status</th></tr></thead>

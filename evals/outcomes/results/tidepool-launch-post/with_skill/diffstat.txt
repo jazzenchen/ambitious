@@ -1,2 +1,2 @@
- blog/tidepool-v1.0-launch.md | 46 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+ blog/tidepool-v1.0.md | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)

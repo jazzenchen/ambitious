@@ -4,15 +4,17 @@
 #   with_skill:    claude -p "/ambitious --go <task>" (card, then its recommended rung, no human in the loop)
 # Same model, same fresh git copy of each fixture, edits allowed in that throwaway copy only.
 # No MCP servers and no claude.ai artifact tools, so every deliverable lands in the repo for both arms.
-# Usage: run_outcomes.sh <out-dir> <skill-file> [eval-name ...]
+# Usage: evals/outcomes/run_outcomes.sh <out-dir> skills/ambitious/SKILL.md [eval-name ...]
+# Costs real API usage (~$1.65/task for both arms on Opus).
 set -u
 W="$(cd "$(dirname "$0")" && pwd)"
+E="$(cd "$W/.." && pwd)"   # evals/: evals.json, parse_run.py, fixtures/
 OUT="$1"; SKILL="$2"; shift 2
 MODEL="${MODEL:-claude-opus-5-5}"
 EVALS=("$@"); [ ${#EVALS[@]} -eq 0 ] && EVALS=(flaky-checkout acme-qbr tidepool-launch-post csv-export)
 
 task_for() {
-  python3 -c "import json,sys; e=[x for x in json.load(open('$W/evals.json'))['evals'] if x['name']==sys.argv[1]][0]; print(e['task'] + '\t' + e['fixture'])" "$1"
+  python3 -c "import json,sys; e=[x for x in json.load(open('$E/evals.json'))['evals'] if x['name']==sys.argv[1]][0]; print(e['task'] + '\t' + e['fixture'])" "$1"
 }
 
 run_one() {
@@ -20,7 +22,7 @@ run_one() {
   IFS=$'\t' read -r task fixture <<<"$(task_for "$name")"
   local run="$OUT/$name/$config"
   rm -rf "$run"; mkdir -p "$run/outputs"
-  cp -R "$W/$fixture" "$run/project"
+  cp -R "$E/$fixture" "$run/project"
   ( cd "$run/project" && git init -q && git add -A && git -c user.name=fixture -c user.email=fixture@example.com commit -qm fixture && echo ".claude/" > .git/info/exclude )
   local prompt="$task"
   if [ "$config" = with_skill ]; then
@@ -35,7 +37,7 @@ run_one() {
       --max-budget-usd 8 </dev/null >"$run/transcript.jsonl" 2>"$run/stderr.txt" )
   local end=$(python3 -c 'import time;print(time.time())')
   ( cd "$run/project" && git add -A && git diff --cached > "$run/outputs/diff.patch" && git diff --cached --stat > "$run/outputs/diffstat.txt" )
-  python3 "$W/parse_run.py" "$run" "$start" "$end"
+  python3 "$E/parse_run.py" "$run" "$start" "$end"
   echo "done: $name/$config"
 }
 

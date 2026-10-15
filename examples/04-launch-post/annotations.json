@@ -1,0 +1,384 @@
+{
+  "source": "# Tidepool\nTidepool is a self-hosted photo library for families. It runs on a Raspberry Pi or any\nsmall server, deduplicates photos from everyone's phones, and recognizes faces locally\n(nothing leaves your house). v1.0 ships next Tuesday after 18 months of nights and weekends.\nCurrent users: ~400 people from the beta, mostly found via r/selfhosted.",
+  "left": {
+    "title": "Plain Claude",
+    "subtitle": "typed: write the launch blog post for Tidepool v1.0",
+    "segments": [
+      {
+        "text": "\n# Tidepool 1.0: your family's photos, in your house\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "Somewhere in your family there's a photo of a birthday cake.",
+        "label": "plain"
+      },
+      {
+        "text": " Actually, there are probably eleven: one from each phone that was in the room, a couple more forwarded through the group chat, and one compressed screenshot of a screenshot.",
+        "label": "plain"
+      },
+      {
+        "text": " They're split across four cloud accounts, and nobody can find the good one.",
+        "label": "plain"
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "Tidepool is my attempt to fix that without handing the whole family album to someone else's servers.",
+        "label": "supported"
+      },
+      {
+        "text": " Today, after 18 months of nights and weekends, it's 1.0.",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n## What Tidepool is\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "Tidepool is a self-hosted photo library built for families.",
+        "label": "supported"
+      },
+      {
+        "text": " You run it on a Raspberry Pi or any small server you already have,",
+        "label": "supported"
+      },
+      {
+        "text": " point everyone's phones at it,",
+        "label": "invented",
+        "note": "README says it deduplicates photos from everyone's phones but never says phones are configured to sync/upload directly to Tidepool."
+      },
+      {
+        "text": " and it becomes the one place your family's photos live.",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "It does three things well:",
+        "label": "plain"
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "- **It runs on small hardware.**",
+        "label": "supported"
+      },
+      {
+        "text": " A Raspberry Pi is enough.",
+        "label": "supported"
+      },
+      {
+        "text": " You don't need a rack, a GPU,",
+        "label": "supported"
+      },
+      {
+        "text": " or a monthly bill.",
+        "label": "invented",
+        "note": "README says nothing about cost or pricing; 'no monthly bill' is not stated."
+      },
+      {
+        "text": "\n",
+        "label": "plain"
+      },
+      {
+        "text": "- **It deduplicates.**",
+        "label": "supported"
+      },
+      {
+        "text": " When five people photograph the same moment,",
+        "label": "invented",
+        "note": "README only says it deduplicates photos; detecting different shots of the same moment (near-duplicate grouping) is not stated."
+      },
+      {
+        "text": " or the same picture comes in from three phones, Tidepool notices and keeps one library instead of five piles.",
+        "label": "supported"
+      },
+      {
+        "text": "\n",
+        "label": "plain"
+      },
+      {
+        "text": "- **It recognizes faces locally.**",
+        "label": "supported"
+      },
+      {
+        "text": " Face recognition runs on your own machine.",
+        "label": "supported"
+      },
+      {
+        "text": " No photo, face, or embedding is sent anywhere.",
+        "label": "supported"
+      },
+      {
+        "text": " Nothing leaves your house.",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "That last point is the reason Tidepool exists.",
+        "label": "invented",
+        "note": "README gives no motivation or origin story for why Tidepool was built."
+      },
+      {
+        "text": " Family photos are some of the most personal data we have.",
+        "label": "plain"
+      },
+      {
+        "text": " Kids grow up in them.",
+        "label": "plain"
+      },
+      {
+        "text": " I wanted the convenience of \"show me every photo of Grandma\" without needing to trust a company's privacy policy to get it.",
+        "label": "invented",
+        "note": "Author's personal motivation and a search-by-person ('every photo of Grandma') feature are not in the README."
+      },
+      {
+        "text": "\n\n## Built with the beta crowd\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "Tidepool spent its beta in the hands of about 400 people, most of whom found it through r/selfhosted.",
+        "label": "supported"
+      },
+      {
+        "text": " They ran it on hardware I'd never have tested,",
+        "label": "invented",
+        "note": "README says nothing about what hardware beta users ran."
+      },
+      {
+        "text": " imported libraries far bigger than mine,",
+        "label": "invented",
+        "note": "README says nothing about beta users' library sizes or the author's own library."
+      },
+      {
+        "text": " and filed the bug reports that turned a side project into something I'm comfortable calling 1.0.",
+        "label": "invented",
+        "note": "README mentions no bug reports or beta feedback shaping the release."
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "If you were one of them: thank you.",
+        "label": "plain"
+      },
+      {
+        "text": " This release is yours as much as mine.",
+        "label": "plain"
+      },
+      {
+        "text": "\n\n<!-- TODO: add 2–4 specific things that changed since beta, ideally ones beta users asked for -->\n\n## What 1.0 means\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "1.0 is a promise about stability, not a claim that it's finished.",
+        "label": "invented",
+        "note": "README makes no stability promise and says nothing about what 1.0 means."
+      },
+      {
+        "text": " Concretely:",
+        "label": "plain"
+      },
+      {
+        "text": "\n\n<!-- TODO: confirm these match your actual commitments before publishing -->\n",
+        "label": "plain"
+      },
+      {
+        "text": "- Your library is safe to upgrade.",
+        "label": "invented",
+        "note": "Upgrade safety is not mentioned in the README."
+      },
+      {
+        "text": " Future versions will migrate your data instead of asking you to re-import.",
+        "label": "invented",
+        "note": "Data-migration promise for future versions is not in the README."
+      },
+      {
+        "text": "\n",
+        "label": "plain"
+      },
+      {
+        "text": "- The setup you do today is the setup you'll keep.",
+        "label": "invented",
+        "note": "Setup-stability promise is not in the README."
+      },
+      {
+        "text": "\n",
+        "label": "plain"
+      },
+      {
+        "text": "- Breaking changes, if any, will be clearly documented ahead of time.",
+        "label": "invented",
+        "note": "Breaking-change documentation policy is not in the README."
+      },
+      {
+        "text": "\n\n## Get started\n\n<!-- TODO: replace with the real install command / docs link -->\n```sh\n# install instructions here\n```\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "Full setup instructions, including a Raspberry Pi walkthrough, are in the [docs](TODO-link).",
+        "label": "invented",
+        "note": "README mentions no docs or Raspberry Pi walkthrough; link is a placeholder."
+      },
+      {
+        "text": " The source is on [GitHub](TODO-link).",
+        "label": "invented",
+        "note": "README never says the source is public or on GitHub; link is a placeholder."
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "If you run into trouble, open an issue or come find us on r/selfhosted.",
+        "label": "invented",
+        "note": "README mentions no issue tracker or support presence on r/selfhosted (only that beta users found Tidepool there)."
+      },
+      {
+        "text": " Many of the people answering there were beta testers, and they know Tidepool better than almost anyone.",
+        "label": "invented",
+        "note": "README says nothing about beta testers answering questions or providing support."
+      },
+      {
+        "text": "\n\n## What's next\n\n<!-- TODO: 1–3 roadmap items, or cut this section -->\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "For now, I'm going to enjoy shipping something.",
+        "label": "plain"
+      },
+      {
+        "text": " Then I'm going to go find the good photo of that birthday cake.",
+        "label": "plain"
+      },
+      {
+        "text": "\n\n— [owner's first name]\n",
+        "label": "plain"
+      }
+    ]
+  },
+  "right": {
+    "title": "With /ambitious (v3.2)",
+    "subtitle": "typed: /ambitious --go write the launch blog post for Tidepool v1.0",
+    "segments": [
+      {
+        "text": "# Tidepool 1.0: your family's photos, at home\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "Every phone in the house holds a different slice of the same family.",
+        "label": "plain"
+      },
+      {
+        "text": " The birthday is on one phone, the beach trip on another, and the good photo of Grandma is on whichever phone was closest at the time.",
+        "label": "plain"
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "Tidepool is a self-hosted photo library for families.",
+        "label": "supported"
+      },
+      {
+        "text": " Your photos stay in your house.",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "After 18 months of nights and weekends, Tidepool v1.0 ships.",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n## What it does\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "**It runs on small hardware.**",
+        "label": "supported"
+      },
+      {
+        "text": " A Raspberry Pi will do, or any small server.",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "**It deduplicates photos from everyone's phones.**",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "**It recognizes faces locally.**",
+        "label": "supported"
+      },
+      {
+        "text": " Nothing leaves your house.",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n## Why \"nothing leaves your house\" is the point\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "A photo library that recognizes faces ends up knowing who everyone in your family is.",
+        "label": "plain"
+      },
+      {
+        "text": " We think that knowledge belongs at home.",
+        "label": "plain"
+      },
+      {
+        "text": " With Tidepool, the library is self-hosted and the face recognition is local, so it stays there.",
+        "label": "supported"
+      },
+      {
+        "text": "\n\n## Thank you, beta testers\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "About 400 people used Tidepool during the beta, most of whom found it through r/selfhosted.",
+        "label": "supported"
+      },
+      {
+        "text": " Thank you.",
+        "label": "plain"
+      },
+      {
+        "text": " This release is for you.",
+        "label": "plain"
+      },
+      {
+        "text": "\n\n## Try it\n\n",
+        "label": "plain"
+      },
+      {
+        "text": "If you have a Raspberry Pi or a small server, and a family whose photos are spread across too many phones, Tidepool v1.0 is for you.",
+        "label": "supported"
+      },
+      {
+        "text": "\n",
+        "label": "plain"
+      }
+    ]
+  }
+}

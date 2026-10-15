@@ -1,0 +1,390 @@
+"""Build the Customer section of the Acme Q3 2026 QBR from data/q3_metrics.csv.
+
+Usage: python3 qbr/build_customer_section.py
+Writes qbr/customer_section_q3.pptx. Check it with qbr/check_figures.py.
+"""
+import csv
+from pathlib import Path
+
+from pptx import Presentation
+from pptx.chart.data import CategoryChartData
+from pptx.dml.color import RGBColor
+from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION, XL_LABEL_POSITION
+from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.util import Inches, Pt
+
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "qbr/customer_section_q3.pptx"
+
+rows = list(csv.DictReader(open(ROOT / "data/q3_metrics.csv")))
+months = sorted({r["month"] for r in rows})
+LABELS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep"]
+SEGS = {"smb": "SMB", "mid_market": "Mid-market", "enterprise": "Enterprise"}
+
+
+def col(seg, c):
+    return [float(r[c]) for m in months for r in rows if r["month"] == m and r["segment"] == seg]
+
+
+def q(seg, c, quarter):
+    s = col(seg, c)
+    return int(sum(s[:3] if quarter == 2 else s[3:]))
+
+
+def pct(a, b, d=0, sign=True):
+    return f"{(b - a) / a * 100:{'+' if sign else ''}.{d}f}%".replace("-", "−")
+
+
+def k(v):
+    return f"${v / 1000:,.1f}k"
+
+
+def n(v):
+    return f"{int(v):,}"
+
+
+# ---- facts, all derived from the CSV ----
+F = {}
+for s in SEGS:
+    F[s] = {
+        "new2": q(s, "new_customers", 2), "new3": q(s, "new_customers", 3),
+        "ch2": q(s, "churned_customers", 2), "ch3": q(s, "churned_customers", 3),
+        "mrr": col(s, "mrr_usd"), "nps": col(s, "nps"),
+        "frt": col(s, "avg_first_response_hours"), "tix": col(s, "support_tickets"),
+        "tix2": q(s, "support_tickets", 2), "tix3": q(s, "support_tickets", 3),
+    }
+    F[s]["net2"] = F[s]["new2"] - F[s]["ch2"]
+    F[s]["net3"] = F[s]["new3"] - F[s]["ch3"]
+smb, mid, ent = F["smb"], F["mid_market"], F["enterprise"]
+tot_jun = sum(F[s]["mrr"][2] for s in SEGS)
+tot_sep = sum(F[s]["mrr"][5] for s in SEGS)
+growth = tot_sep - tot_jun
+share_growth = {s: (F[s]["mrr"][5] - F[s]["mrr"][2]) / growth * 100 for s in SEGS}
+smb_share_sep = smb["mrr"][5] / tot_sep * 100
+smb_new, smb_ch = col("smb", "new_customers"), col("smb", "churned_customers")
+per100 = [c / w * 100 for c, w in zip(smb_ch, smb_new)]
+
+# ---- style ----
+INK = RGBColor(0x0B, 0x0B, 0x0B)
+INK2 = RGBColor(0x52, 0x51, 0x4E)
+MUTED = RGBColor(0x8A, 0x89, 0x84)
+RULE = RGBColor(0xE4, 0xE3, 0xDF)
+PANEL = RGBColor(0xF3, 0xF2, 0xEF)
+BLUE, ORANGE, AQUA = RGBColor(0x2A, 0x78, 0xD6), RGBColor(0xEB, 0x68, 0x34), RGBColor(0x1B, 0xAF, 0x7A)
+SEG_COLOR = {"smb": BLUE, "mid_market": ORANGE, "enterprise": AQUA}
+FONT = "Calibri"
+
+prs = Presentation()
+prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
+BLANK = prs.slide_layouts[6]
+
+
+def text(slide, x, y, w, h, content, size=16, color=INK, bold=False, align=PP_ALIGN.LEFT,
+         anchor=MSO_ANCHOR.TOP, spacing=1.1):
+    """content: str or list of str / (str, dict) paragraphs."""
+    tb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    tf.vertical_anchor = anchor
+    tf.margin_left = tf.margin_right = Inches(0.02)
+    paras = content if isinstance(content, list) else [content]
+    for i, p in enumerate(paras):
+        t, opt = (p, {}) if isinstance(p, str) else p
+        para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        para.alignment = opt.get("align", align)
+        para.line_spacing = spacing
+        para.space_after = Pt(opt.get("after", 6))
+        r = para.add_run()
+        r.text = t
+        r.font.name = FONT
+        r.font.size = Pt(opt.get("size", size))
+        r.font.bold = opt.get("bold", bold)
+        r.font.color.rgb = opt.get("color", color)
+    return tb
+
+
+def rect(slide, x, y, w, h, fill=PANEL):
+    s = slide.shapes.add_shape(1, Inches(x), Inches(y), Inches(w), Inches(h))
+    s.fill.solid()
+    s.fill.fore_color.rgb = fill
+    s.line.fill.background()
+    s.shadow.inherit = False
+    return s
+
+
+def slide_base(title, kicker="Customers · Q3 2026", notes=""):
+    s = prs.slides.add_slide(BLANK)
+    text(s, 0.6, 0.35, 12, 0.35, kicker.upper(), size=11, color=MUTED, bold=True)
+    text(s, 0.6, 0.65, 12.1, 1.1, title, size=28, bold=True, spacing=1.0)
+    line = s.shapes.add_connector(1, Inches(0.6), Inches(1.75), Inches(12.73), Inches(1.75))
+    line.line.color.rgb = RULE
+    line.line.width = Pt(1)
+    text(s, 0.6, 7.0, 12, 0.3, "Source: data/q3_metrics.csv (monthly, Apr–Sep)", size=10, color=MUTED)
+    if notes:
+        s.notes_slide.notes_text_frame.text = notes
+    return s
+
+
+def stat(slide, x, y, w, big, label, sub=None, color=INK):
+    text(slide, x, y, w, 0.7, big, size=34, bold=True, color=color)
+    text(slide, x, y + 0.72, w, 0.4, label, size=13, color=INK2)
+    if sub:
+        text(slide, x, y + 1.05, w, 0.4, sub, size=11, color=MUTED)
+
+
+def style_chart(chart, legend=True, fmt=None, minv=None, maxv=None):
+    chart.font.name = FONT
+    chart.font.size = Pt(12)
+    chart.font.color.rgb = INK2
+    chart.has_legend = legend
+    if legend:
+        chart.legend.position = XL_LEGEND_POSITION.TOP
+        chart.legend.include_in_layout = False
+        chart.legend.font.size = Pt(12)
+    va = chart.value_axis
+    va.has_major_gridlines = True
+    va.major_gridlines.format.line.color.rgb = RULE
+    va.format.line.fill.background()
+    va.tick_labels.font.size = Pt(11)
+    va.tick_labels.font.color.rgb = MUTED
+    if fmt:
+        va.tick_labels.number_format = fmt
+        va.tick_labels.number_format_is_linked = False
+    if minv is not None:
+        va.minimum_scale = minv
+    if maxv is not None:
+        va.maximum_scale = maxv
+    ca = chart.category_axis
+    ca.format.line.color.rgb = RULE
+    ca.tick_labels.font.size = Pt(12)
+    ca.tick_labels.font.color.rgb = INK2
+
+
+def line_chart(slide, x, y, w, h, series, fmt=None, legend=True, minv=None, maxv=None, label_fmt=None):
+    cd = CategoryChartData()
+    cd.categories = LABELS
+    for name, vals, _ in series:
+        cd.add_series(name, vals)
+    gf = slide.shapes.add_chart(XL_CHART_TYPE.LINE_MARKERS, Inches(x), Inches(y), Inches(w), Inches(h), cd)
+    ch = gf.chart
+    ch.has_title = False
+    style_chart(ch, legend, fmt, minv, maxv)
+    for s, (_, _, color) in zip(ch.plots[0].series, series):
+        s.smooth = False
+        s.format.line.color.rgb = color
+        s.format.line.width = Pt(2.25)
+        s.marker.style = 8  # circle
+        s.marker.size = 8
+        s.marker.format.fill.solid()
+        s.marker.format.fill.fore_color.rgb = color
+        s.marker.format.line.color.rgb = RGBColor(0xFC, 0xFC, 0xFB)
+        if label_fmt:  # label first and last points only
+            for i in (0, len(LABELS) - 1):
+                dl = s.points[i].data_label
+                dl.has_text_frame = False
+                dl.number_format = label_fmt
+                dl.number_format_is_linked = False
+                dl.position = XL_LABEL_POSITION.ABOVE
+                dl.font.size = Pt(11)
+                dl.font.color.rgb = INK2
+                dl.show_value = True
+    return ch
+
+
+# ---------- 1. Title ----------
+s = prs.slides.add_slide(BLANK)
+rect(s, 0, 0, 13.333, 7.5, fill=RGBColor(0x14, 0x24, 0x3B))
+text(s, 0.9, 2.2, 11, 0.4, "ACME QUARTERLY BUSINESS REVIEW · Q3 2026", size=14, bold=True,
+     color=RGBColor(0x9E, 0xC5, 0xF4))
+text(s, 0.9, 2.7, 11.5, 1.2, "Customers: SMB sign-ups rose, net adds did not", size=40, bold=True, color=RGBColor(0xFF, 0xFF, 0xFF))
+text(s, 0.9, 3.9, 11.5, 1.2,
+     f"SMB sign-ups and losses both rose by {smb['new3'] - smb['new2']} in Q3, so net adds stayed flat; two calls for the room today.",
+     size=22, color=RGBColor(0xDD, 0xE6, 0xF2), spacing=1.15)
+s.notes_slide.notes_text_frame.text = (
+    "Section in one line: SMB growth stalled while sign-ups hit a high; mid-market and enterprise "
+    "carried revenue growth. We need two decisions: SMB support capacity and SMB acquisition pace.")
+
+# ---------- 2. Scorecard ----------
+s = slide_base(f"Enterprise drove growth; SMB signed {pct(smb['new2'], smb['new3'], sign=False)} more customers and added no more net",
+               notes="Net adds = new customers minus churned customers. Q2 figures in brackets. "
+                     "Monthly values are September; first response and NPS change shown from April.")
+hdr = ["", "New logos", "Churned", "Net adds", "MRR, Sep", "NPS, Sep", "First response, Sep"]
+tbl_rows = []
+for key, name in SEGS.items():
+    f = F[key]
+    tbl_rows.append([
+        name,
+        f"{n(f['new3'])}  (Q2 {n(f['new2'])})",
+        f"{n(f['ch3'])}  (Q2 {n(f['ch2'])})",
+        f"{n(f['net3'])}  (Q2 {n(f['net2'])})",
+        f"{k(f['mrr'][5])}  ({pct(f['mrr'][2], f['mrr'][5], 1)})",
+        f"{int(f['nps'][5])}  (Apr {int(f['nps'][0])})",
+        f"{f['frt'][5]:.1f} h  (Apr {f['frt'][0]:.1f} h)",
+    ])
+gt = s.shapes.add_table(4, 7, Inches(0.6), Inches(2.1), Inches(12.13), Inches(2.6))
+t = gt.table
+widths = [1.6, 1.8, 1.7, 1.7, 1.9, 1.5, 1.93]
+for i, w in enumerate(widths):
+    t.columns[i].width = Inches(w)
+for r, vals in enumerate([hdr] + tbl_rows):
+    for c, v in enumerate(vals):
+        cell = t.cell(r, c)
+        cell.fill.solid()
+        cell.fill.fore_color.rgb = RGBColor(0xFF, 0xFF, 0xFF) if r else PANEL
+        cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+        p = cell.text_frame.paragraphs[0]
+        p.alignment = PP_ALIGN.LEFT
+        f = p.add_run().font
+        p.runs[0].text = v
+        f.name = FONT
+        f.size = Pt(13 if r else 12)
+        f.bold = (r == 0 or c == 0)
+        f.color.rgb = INK2 if r == 0 else INK
+        if r == 1 and c in (2, 5, 6):
+            f.color.rgb = RGBColor(0xC2, 0x3B, 0x22)
+            f.bold = True
+text(s, 0.6, 5.0, 12, 1.6, [
+    (f"SMB churned {n(smb['ch3'])} customers in Q3, up from {n(smb['ch2'])}, and its September "
+     f"first response time was {smb['frt'][5]:.1f} h, against {mid['frt'][5]:.1f} h in mid-market.", {}),
+    (f"Total MRR grew from {k(tot_jun)} in June to {k(tot_sep)} in September "
+     f"({pct(tot_jun, tot_sep, 1)}).", {}),
+], size=16, color=INK2)
+
+# ---------- 3. SMB logo bridge ----------
+s = slide_base(f"SMB signed {smb['new3'] - smb['new2']} more customers than in Q2 and lost "
+               f"{smb['ch3'] - smb['ch2']} more, so net growth stayed at {smb['net3']}",
+               notes="Sales is right that SMB sign-ups are at a high (September is the highest month in the data). "
+                     "Losses rose faster than sign-ups, so net adds did not move. We cannot state a churn rate: "
+                     "the data has no count of total SMB customers.")
+cd = CategoryChartData()
+cd.categories = LABELS
+cd.add_series("New SMB customers", smb_new)
+cd.add_series("Churned SMB customers", smb_ch)
+gf = s.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(0.5), Inches(2.0), Inches(7.6), Inches(4.8), cd)
+ch = gf.chart
+style_chart(ch, legend=True, minv=0)
+ch.plots[0].gap_width = 60
+ch.plots[0].overlap = -8
+for ser, color in zip(ch.plots[0].series, (BLUE, ORANGE)):
+    ser.format.fill.solid()
+    ser.format.fill.fore_color.rgb = color
+    ser.data_labels.show_value = True
+    ser.data_labels.font.size = Pt(11)
+    ser.data_labels.font.color.rgb = INK2
+    ser.data_labels.position = XL_LABEL_POSITION.OUTSIDE_END
+rect(s, 8.5, 2.0, 4.23, 4.8)
+text(s, 8.8, 2.2, 3.7, 0.4, "SMB customer bridge", size=13, bold=True, color=INK2)
+bridge = [("", "Q2", "Q3"),
+          ("New", n(smb["new2"]), n(smb["new3"])),
+          ("Churned", f"−{n(smb['ch2'])}", f"−{n(smb['ch3'])}"),
+          ("Net adds", n(smb["net2"]), n(smb["net3"]))]
+for i, (a, b, c) in enumerate(bridge):
+    yy = 2.65 + i * 0.5
+    bold = i in (0, 3)
+    text(s, 8.8, yy, 1.5, 0.4, a, size=15, bold=bold, color=INK2 if i == 0 else INK)
+    text(s, 10.3, yy, 1.0, 0.4, b, size=15, bold=bold, align=PP_ALIGN.RIGHT, color=INK2 if i == 0 else INK)
+    text(s, 11.4, yy, 1.0, 0.4, c, size=15, bold=bold, align=PP_ALIGN.RIGHT, color=INK2 if i == 0 else INK)
+ln = s.shapes.add_connector(1, Inches(8.8), Inches(4.13), Inches(12.4), Inches(4.13))
+ln.line.color.rgb = MUTED
+text(s, 8.8, 4.45, 3.7, 2.2, [
+    (f"In April SMB lost {per100[0]:.0f} customers for every 100 it signed. "
+     f"In September it lost {per100[5]:.0f}.", {}),
+    ("The data has no total customer count, so this is not a churn rate.", {"color": MUTED, "size": 12}),
+], size=14, color=INK)
+
+# ---------- 4. SMB support ----------
+s = slide_base(f"SMB support slowed every month from April to September, while NPS and losses moved the wrong way",
+               notes="All three SMB series moved in one direction every month for six months: first response up, "
+                     "NPS down, churned customers up. Six points cannot show cause. Exit reasons are not in this data.")
+line_chart(s, 0.5, 2.0, 4.2, 3.6, [("SMB first response (hours)", smb["frt"], BLUE)],
+           legend=False, minv=0, label_fmt='0.0" h"')
+text(s, 0.6, 1.9, 4, 0.35, "First response time, hours", size=13, bold=True, color=INK2)
+line_chart(s, 4.75, 2.0, 4.2, 3.6, [("SMB NPS", smb["nps"], BLUE)], legend=False, minv=0, maxv=50,
+           label_fmt="0")
+text(s, 4.85, 1.9, 4, 0.35, "NPS", size=13, bold=True, color=INK2)
+line_chart(s, 9.0, 2.0, 4.0, 3.6, [("SMB tickets", smb["tix"], BLUE)], legend=False, minv=0,
+           fmt="#,##0", label_fmt="#,##0")
+text(s, 9.1, 1.9, 4, 0.35, "Support tickets per month", size=13, bold=True, color=INK2)
+rect(s, 0.6, 5.8, 12.13, 1.05)
+text(s, 0.85, 5.88, 11.7, 0.95, [
+    (f"Tickets rose {pct(smb['tix'][0], smb['tix'][5], sign=False)} from April to September; "
+     f"the first reply now takes {smb['frt'][5] / smb['frt'][0]:.1f}× as long.", {"bold": True, "color": INK}),
+    ("This is a pattern, not proof. Six months of data cannot separate support from price, product "
+     "fit or the mix of customers being signed.", {"color": INK2, "size": 13}),
+], size=15, anchor=MSO_ANCHOR.MIDDLE)
+
+# ---------- 5. MRR ----------
+s = slide_base(f"Enterprise delivered {share_growth['enterprise']:.0f}% of MRR growth since June; "
+               f"SMB delivered {share_growth['smb']:.0f}%",
+               notes="MRR growth June to September by segment. SMB is about a fifth of MRR. "
+                     "Enterprise sign-ups are small numbers, so one or two deals can swing a quarter.")
+line_chart(s, 0.5, 2.0, 8.2, 4.8,
+           [(SEGS[x], F[x]["mrr"], SEG_COLOR[x]) for x in ("enterprise", "mid_market", "smb")],
+           fmt='$#,##0,"k"', minv=0)
+for i, x in enumerate(("enterprise", "mid_market", "smb")):
+    f = F[x]
+    yy = 2.0 + i * 1.6
+    stat(s, 9.2, yy, 3.6, pct(f["mrr"][2], f["mrr"][5], 1),
+         f"{SEGS[x]} MRR, June to September",
+         f"{k(f['mrr'][2])} → {k(f['mrr'][5])}", color=INK)
+
+# ---------- 6. Mid-market & enterprise ----------
+s = slide_base("Mid-market and enterprise lost less ground than SMB on service and NPS; mid-market net adds were flat too",
+               notes="Mid-market added the same net number of customers in Q2 and Q3. Its losses rose a little "
+                     "and its response time drifted up less than an hour. Enterprise lost one customer in each quarter.")
+for i, x in enumerate(("mid_market", "enterprise")):
+    f = F[x]
+    x0 = 0.6 + i * 6.25
+    rect(s, x0, 2.0, 5.88, 3.95)
+    text(s, x0 + 0.3, 2.15, 5, 0.5, SEGS[x], size=20, bold=True)
+    stat(s, x0 + 0.3, 2.75, 2.6, f"{f['frt'][5]:.1f} h", "first response, Sep",
+         f"April: {f['frt'][0]:.1f} h")
+    stat(s, x0 + 3.1, 2.75, 2.6, f"{int(f['nps'][5])}", "NPS, Sep", f"April: {int(f['nps'][0])}")
+    stat(s, x0 + 0.3, 4.35, 2.6, n(f["net3"]), "net adds, Q3", f"Q2: {n(f['net2'])}")
+    stat(s, x0 + 3.1, 4.35, 2.6, n(f["ch3"]), "churned, Q3", f"Q2: {n(f['ch2'])}")
+
+# ---------- 7. Call 1 ----------
+
+
+def call_slide(num, question, for_pts, against_pts, ask, notes):
+    s = slide_base(question, kicker=f"Decision for the room · Call {num}", notes=notes)
+    for i, (head, pts, color) in enumerate((("For", for_pts, AQUA), ("Against", against_pts, ORANGE))):
+        x0 = 0.6 + i * 6.25
+        bar = rect(s, x0, 2.0, 0.08, 3.9, fill=color)
+        text(s, x0 + 0.3, 1.95, 5.5, 0.5, head, size=20, bold=True)
+        text(s, x0 + 0.3, 2.55, 5.5, 3.4, [("•  " + p, {"after": 12}) for p in pts], size=15, color=INK)
+    rect(s, 0.6, 6.05, 12.13, 0.8)
+    text(s, 0.85, 6.05, 11.7, 0.8, ask, size=15, bold=True, anchor=MSO_ANCHOR.MIDDLE)
+
+
+call_slide(
+    1, "The room should decide whether to fund SMB support back to April response times",
+    [f"First response rose every month, {smb['frt'][0]:.1f} h → {smb['frt'][5]:.1f} h. NPS fell every month, "
+     f"{int(smb['nps'][0])} → {int(smb['nps'][5])}.",
+     f"Customers lost rose every month too, {n(smb_ch[0])} → {n(smb_ch[5])}.",
+     f"SMB tickets grew {pct(smb['tix2'], smb['tix3'], sign=False)} quarter on quarter, faster than SMB sign-ups "
+     f"({pct(smb['new2'], smb['new3'])}). If that continues, the queue grows unless capacity does.",
+     ],
+    ["Six months move together, but that does not prove slow support causes the losses. "
+     "Price, product fit or the type of customer being signed could explain them.",
+     f"SMB is {smb_share_sep:.0f}% of MRR and grew {pct(smb['mrr'][2], smb['mrr'][5], 1, sign=False)} in Q3. "
+     f"Money spent here is not spent on enterprise, which delivered {share_growth['enterprise']:.0f}% of MRR growth since June.",
+     "We have no exit reasons and no total customer count, so we cannot size the payoff yet."],
+    "Ask: a yes or no, an owner, and whether to start with a time-boxed test on part of the SMB queue.",
+    notes="Recommendation to discuss: a time-boxed test (faster queue for part of SMB) answers the causation "
+          "question cheaply before a full commitment. Track SMB first response and losses per 100 sign-ups monthly.")
+
+call_slide(
+    2, "The room should decide whether SMB acquisition keeps its Q3 pace while losses rise",
+    [f"Sales signed more SMB customers in Q3 than in Q2, with {n(smb_new[5])} in September, the highest of the six months.",
+     f"Net adds held at {n(smb['net3'])} a quarter, and SMB MRR still rose, {k(smb['mrr'][2])} → {k(smb['mrr'][5])}.",
+     "Slowing sign-ups cuts new logos now, while any retention gain is still unproven."],
+    [f"The extra {smb['new3'] - smb['new2']} sign-ups in Q3 produced no extra net growth.",
+     f"For every 100 sign-ups SMB now loses {per100[5]:.0f}, up from {per100[0]:.0f} in April (not a churn rate).",
+     f"Every new SMB customer adds to a support queue already at {smb['frt'][5]:.1f} h for a first reply."],
+    "Ask: keep the pace, hold it flat until support recovers, or shift effort to mid-market and enterprise.",
+    notes="This call depends on Call 1. If support is funded, keeping the pace is easier to defend. "
+          "Losses per 100 sign-ups is the simplest number to watch until we have a true churn rate.")
+
+prs.save(OUT)
+print(f"wrote {OUT.relative_to(ROOT)} ({len(prs.slides)} slides)")

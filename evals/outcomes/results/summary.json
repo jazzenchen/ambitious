@@ -1,0 +1,59 @@
+{
+  "flaky-checkout": {
+    "with_cost": 0.52,
+    "with_min": 20.2,
+    "without_cost": 0.18,
+    "without_min": 0.7,
+    "judges": [
+      "with_skill",
+      "with_skill",
+      "without_skill"
+    ]
+  },
+  "csv-export": {
+    "with_cost": 0.64,
+    "with_min": 2.5,
+    "without_cost": 0.21,
+    "without_min": 0.6,
+    "judges": [
+      "with_skill",
+      "with_skill",
+      "with_skill"
+    ]
+  },
+  "acme-qbr": {
+    "with_cost": 2.32,
+    "with_min": 24.8,
+    "without_cost": 1.1,
+    "without_min": 10.3,
+    "judges": [
+      "with_skill",
+      "with_skill",
+      "with_skill"
+    ]
+  },
+  "tidepool-launch-post": {
+    "with_cost": 1.45,
+    "with_min": 6.0,
+    "without_cost": 0.17,
+    "without_min": 0.7,
+    "judges": [
+      "without_skill",
+      "without_skill",
+      "with_skill"
+    ]
+  },
+  "avg": {
+    "with_cost": 1.23,
+    "without_cost": 0.42,
+    "with_min": 13.4,
+    "without_min": 3.1,
+    "cost_ratio": 3.0,
+    "time_ratio": 4.3
+  },
+  "judges_total": {
+    "with_skill": 9,
+    "without_skill": 3,
+    "tie": 0
+  }
+}

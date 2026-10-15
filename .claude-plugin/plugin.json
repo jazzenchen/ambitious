@@ -1,10 +1,19 @@
 {
   "name": "ambitious",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Unofficial /ambitious skill: turns the task in front of you into the deepest version worth attempting, with a runnable outside judge and your original ask as the floor. Inspired by Felix Rieseberg's essay \"How to be more ambitious\".",
-  "author": { "name": "Jazzen Chen", "url": "https://github.com/jazzenchen" },
+  "author": {
+    "name": "Jazzen Chen",
+    "url": "https://github.com/jazzenchen"
+  },
   "homepage": "https://github.com/jazzenchen/ambitious",
   "repository": "https://github.com/jazzenchen/ambitious",
   "license": "MIT",
-  "keywords": ["ambition", "planning", "skill", "verification", "productivity"]
+  "keywords": [
+    "ambition",
+    "planning",
+    "skill",
+    "verification",
+    "productivity"
+  ]
 }

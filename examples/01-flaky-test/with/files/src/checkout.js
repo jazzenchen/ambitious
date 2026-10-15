@@ -7,9 +7,10 @@ export async function checkout(cart) {
   );
   const failed = results.find((r) => r.status === "rejected");
   if (failed) {
-    // All or nothing: give back any stock this order did manage to hold.
-    const held = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
-    await Promise.all(held.map((r) => release(r.sku, r.qty)));
+    // Give back whatever we did manage to hold before failing the order.
+    for (const r of results) {
+      if (r.status === "fulfilled") release(r.value.sku, r.value.qty);
+    }
     throw failed.reason;
   }
   return { orderId: `ord_${cart.id}`, reservations: results.map((r) => r.value) };

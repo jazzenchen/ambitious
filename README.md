@@ -111,20 +111,22 @@ The never-grade-your-own-homework rule is the essay's. Several things are this s
 
 ## Does it actually help? With vs. without, measured
 
-Same 4 tasks, same model. Each was run once as you'd normally type it and once as `/ambitious --go <task>`. The finished work was then measured with hidden checks neither run saw, and compared by blind judges.
+Same 4 tasks, same model. Each was run once as you'd normally type it and once as `/ambitious --go <task>`. The finished work was then measured with hidden checks neither run saw, and compared by blind judges who were shown the rendered slides.
 
-| Task | Without the skill | With `/ambitious` |
-|---|---|---|
-| Fix a flaky test | Flake fixed, but **failed carts leak stock in 300/300 trials** | Flake fixed, **0/300** leaked, and a test that catches the leak |
-| Launch blog post | Polished, but **20 of 29 claims invented** | 1 unsupported claim. The gaps are marked `[TK]` instead of made up. |
-| CSV export button | Correct and injection-safe | Same quality, plus a tested module |
-| QBR deck section | 0 wrong numbers, with charts and polish | 0 wrong numbers, a figure-check script, no charts, `[TK]` owners |
-| Blind judges preferred | **7 of 12** | 5 of 12 |
-| Avg cost / time | $0.42 · 3 min | $1.06 · 7 min |
+| Task | Without the skill | With `/ambitious` (v3.2) | Blind judges |
+|---|---|---|---|
+| Fix a flaky test | Flake fixed, but **failed orders leak stock in 300/300 trials** | Flake fixed, **0/300**, and a test that catches the leak | with, 2–1 |
+| CSV export button | Correct and injection-safe | Equally correct, cleaner code | with, 3–0 |
+| QBR deck section | 0 wrong numbers, but **2 slides render broken** in PowerPoint | 0 wrong numbers, 5 charts, nothing broken | with, 3–0 |
+| Launch blog post | Livelier, but **14–20 claims made up** | Shorter, **0 made up** | without, 2–1 |
+| **Total** | 3 of 12 | **9 of 12** | |
+| Avg cost / time | $0.42 · 3 min | $1.23 · 13 min | |
 
-Every prompt and result is published, with a plain-English explanation: [examples/](examples/).
+![Plain Claude's post vs /ambitious: claims not in the source highlighted in red](examples/04-launch-post/side-by-side.png)
 
-In short, it's more correct and less polished. Where correctness was measurable (the code and the facts), `/ambitious` came out ahead. Where polish mattered (the deck and the post), the judges preferred plain Claude's finished look, flaws included. Use it when being wrong is expensive, and skip it for a quick draft. The full report, hidden tests and every output are in [`evals/outcomes/OUTCOMES.md`](evals/outcomes/OUTCOMES.md). Caveat: one run per arm, model judges, fixtures I wrote.
+**What it means:** it's more correct, now with equal or better polish, and it costs about 3× more and takes about 4× longer. Use it when being wrong is expensive. Every prompt, output and rendered deck is in [examples/](examples/), and the full report is in [evals/outcomes/OUTCOMES.md](evals/outcomes/OUTCOMES.md).
+
+**Honest history:** v3.1 lost the deck 0–3, because it traded looks for checking and left placeholders on the slides. v3.2 makes a finished, polished result part of the guaranteed floor, and the four tasks were re-run. That also means these four tasks are no longer an unseen test. One run per arm, model judges, fixtures I wrote.
 
 ### Proposal quality vs. telling Claude to "be more ambitious"
 
@@ -154,7 +156,7 @@ The full table, every output and every grade are in [`evals/results/BENCHMARK.md
 
 ## Cost, honestly
 
-- **Finished work:** in the with/without benchmark, `/ambitious --go` averaged $1.06 and 7 minutes per task. Plain Claude averaged $0.42 and 3 minutes, so the skill costs about 2.5× more.
+- **Finished work:** in the with/without benchmark, `/ambitious --go` (v3.2) averaged $1.23 and 13 minutes per task. Plain Claude averaged $0.42 and 3 minutes, so the skill costs about 3× more and takes about 4× longer.
 - **Card only:** printing the card costs about $0.29.
 
 Most of the extra goes to the skill's instructions, writing the judge before the work and running it. If your task is a rename, `/ambitious` will tell you not to bother.

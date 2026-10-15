@@ -1,7 +1,7 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { checkout } from "../src/checkout.js";
-import { _reset, reserve } from "../src/inventory.js";
+import { _reset } from "../src/inventory.js";
 
 beforeEach(() => _reset());
 
@@ -17,8 +17,10 @@ test("checkout rejects a sold-out item", async () => {
   );
 });
 
-test("a failed checkout releases the stock it held", async () => {
-  const items = [{ sku: "sku-red-mug", qty: 1 }, { sku: "sku-blue-mug", qty: 1 }];
-  await assert.rejects(checkout({ id: 3, items }), /out of stock/);
-  await reserve("sku-red-mug", 3); // all 3 red mugs must still be available
+test("failed checkout releases the items it already reserved", async () => {
+  await assert.rejects(
+    checkout({ id: 3, items: [{ sku: "sku-red-mug", qty: 2 }, { sku: "sku-blue-mug", qty: 1 }] }),
+  );
+  const order = await checkout({ id: 4, items: [{ sku: "sku-red-mug", qty: 3 }] });
+  assert.equal(order.reservations[0].qty, 3);
 });

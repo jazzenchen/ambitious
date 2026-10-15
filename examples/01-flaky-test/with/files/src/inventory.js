@@ -9,7 +9,7 @@ export async function reserve(sku, qty) {
   return { sku, qty, reservedAt: Date.now() };
 }
 
-export async function release(sku, qty) {
+export function release(sku, qty) {
   stock.set(sku, (stock.get(sku) ?? 0) + qty);
 }
 
